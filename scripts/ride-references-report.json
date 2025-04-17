@@ -1,0 +1,467 @@
+[
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\about\\page.tsx",
+    "matches": [
+      "journey"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\admin\\drivers\\page.tsx",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\admin\\page.tsx",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\api\\bookings\\generate-code\\route.ts",
+    "matches": [
+      "ride",
+      "driver",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\api\\bookings\\refresh-verification\\route.ts",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\api\\bookings\\verify-code\\route.ts",
+    "matches": [
+      "ride",
+      "driver",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\auth\\page.tsx",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\become-driver\\page.tsx",
+    "matches": [
+      "driver",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\bookings\\booking-card.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\bookings\\bookings-list.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\bookings\\receipt-card.tsx",
+    "matches": [
+      "ride",
+      "booking",
+      "journey"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\config.ts",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\contact\\page.tsx",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\driver\\bookings\\page.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "passenger",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\driver\\dashboard\\page.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "passenger",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\driver\\pending\\page.tsx",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\driver\\profile\\page.tsx",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\driver\\rides\\new\\page.tsx",
+    "matches": [
+      "ride",
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\driver\\rides\\[id]\\messages\\page.tsx",
+    "matches": [
+      "ride",
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\drivers\\page.tsx",
+    "matches": [
+      "ride",
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\layout.tsx",
+    "matches": [
+      "ride",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\page.tsx",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\payments\\status\\page.tsx",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\receipts\\[id]\\page.tsx",
+    "matches": [
+      "ride",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\rides\\booking-modal.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\rides\\chat-modal.tsx",
+    "matches": [
+      "ride",
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\app\\rides\\page.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\components\\bookings\\verification-code-display.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\components\\driver\\code-verification-form.tsx",
+    "matches": [
+      "ride",
+      "passenger",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\components\\footer.tsx",
+    "matches": [
+      "ride",
+      "driver",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\components\\pwa\\AndroidInstallPrompt.tsx",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\components\\pwa\\InstallPrompt.tsx",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\components\\pwa\\IOSInstallPrompt.tsx",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\components\\pwa\\PWAPrompts.tsx",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\deployment\\deployment-guide.md",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\deployment\\vercel-hostinger-setup.md",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\MESSAGING_ROADMAP.md",
+    "matches": [
+      "ride",
+      "driver",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\MTN_MOMO_CREDENTIALS_GUIDE.md",
+    "matches": [
+      "ride",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\MTN_MOMO_INTEGRATION.md",
+    "matches": [
+      "ride",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\notifications\\sms-service-setup.md",
+    "matches": [
+      "ride",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\notifications\\twilio-production-setup.md",
+    "matches": [
+      "ride",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\notifications\\twilio-sandbox-setup.md",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\payment-testing.md",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\payments\\mtn-momo-integration.md",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\payments\\orange-money-integration.md",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\payments\\orange-money-setup-guide.md",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\payments\\payment-flow.md",
+    "matches": [
+      "ride",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\payments\\README.md",
+    "matches": [
+      "ride",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\payments\\status-management.md",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\PAYMENT_INTEGRATION_ROADMAP.md",
+    "matches": [
+      "ride",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\docs\\testing\\reservation-payment-flow.md",
+    "matches": [
+      "ride",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\EVENT_PORTAL_PLAN.md",
+    "matches": [
+      "ride",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\lib\\notifications\\sms-service.ts",
+    "matches": [
+      "ride",
+      "driver",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\lib\\payment\\payment-service.ts",
+    "matches": [
+      "ride",
+      "booking",
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\lib\\payment\\receipt-service.ts",
+    "matches": [
+      "ride",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\lib\\services\\registration-service.ts",
+    "matches": [
+      "ride",
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\lib\\supabase\\types.ts",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\middleware.ts",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\package-lock.json",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\package.json",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\public\\manifest.json",
+    "matches": [
+      "pikdrive"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\public\\sw.js",
+    "matches": [
+      "driver"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\supabase\\migrations\\20250221_add_payment_procedures.sql",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\supabase\\migrations\\20250401_add_booking_verification_codes.sql",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\supabase\\migrations\\20250401_fix_bookings_insert_policy.sql",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\supabase\\migrations\\20250401_fix_verification_code_function.sql",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\supabase\\migrations\\20250401_fix_verification_permissions.sql",
+    "matches": [
+      "booking"
+    ]
+  },
+  {
+    "file": "C:\\Users\\jospe\\Documents\\github\\jospen\\event-portal\\TODO.md",
+    "matches": [
+      "pikdrive"
+    ]
+  }
+]
