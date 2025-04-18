@@ -19,7 +19,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { isAdmin } from "@/lib/utils/admin"
-import { isAdminBypassActive } from "@/lib/admin-bypass"
 
 interface DriverApplication {
   id: string
@@ -55,11 +54,6 @@ export default function AdminDriversPage() {
 
   const checkAdminAccess = async () => {
     try {
-      // First check for admin bypass
-      if (isAdminBypassActive()) {
-        console.log('Admin bypass active in drivers page, granting access')
-        return
-      }
       
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {

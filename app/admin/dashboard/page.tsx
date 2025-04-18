@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Calendar, Users, BarChart3, Clock, AlertCircle, Settings, PlusCircle } from 'lucide-react'
 import { isAdmin } from '@/lib/utils/admin'
-import { isAdminBypassActive, getAdminTestUser } from '@/lib/admin-bypass'
 
 export default function AdminDashboard() {
   const { supabase, user } = useSupabase()
@@ -24,20 +23,6 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      // First check for admin bypass - this is the simplest and most direct check
-      if (isAdminBypassActive()) {
-        console.log('Admin bypass active in dashboard, granting access')
-        setLoading(false)
-        
-        // Load some placeholder stats for testing
-        setStats({
-          totalEvents: 12,
-          activeEvents: 8,
-          totalUsers: 45,
-          totalRegistrations: 67,
-        })
-        return
-      }
 
       if (!user) {
         router.push('/auth?redirectTo=/admin/dashboard')

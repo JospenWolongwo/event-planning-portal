@@ -50,7 +50,7 @@ export function EventForm({ event, onSubmit, onCancel }: EventFormProps) {
 
         if (error) throw error
 
-        setCategories(data.map(cat => cat.name))
+        setCategories(data.map((cat: { name: string }) => cat.name))
       } catch (error) {
         console.error('Error fetching categories:', error)
       }
@@ -130,6 +130,12 @@ export function EventForm({ event, onSubmit, onCancel }: EventFormProps) {
     setLoading(true)
 
     try {
+      if (!eventDate) {
+        toast.error('Please select an event date')
+        setLoading(false)
+        return
+      }
+      
       const formattedDate = format(eventDate, 'yyyy-MM-dd')
       
       // Get the user ID from the current user
@@ -260,7 +266,6 @@ export function EventForm({ event, onSubmit, onCancel }: EventFormProps) {
           <div>
             <Label htmlFor="time">Time</Label>
             <TimePicker
-              id="time"
               value={eventTime}
               onChange={setEventTime}
               className="w-full"

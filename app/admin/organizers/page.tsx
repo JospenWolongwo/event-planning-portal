@@ -21,7 +21,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input"
 import { Search, Calendar, Users } from "lucide-react"
 import { isAdmin } from "@/lib/utils/admin"
-import { isAdminBypassActive } from "@/lib/admin-bypass"
 
 interface OrganizerProfile {
   id: string
@@ -48,11 +47,6 @@ export default function AdminOrganizersPage() {
   }, [])
 
   const checkAdminAccess = async () => {
-    // First check for admin bypass
-    if (isAdminBypassActive()) {
-      console.log('Admin bypass active in organizers page, granting access')
-      return
-    }
     
     if (!user) {
       router.push('/auth?redirectTo=/admin/organizers')
@@ -96,7 +90,7 @@ export default function AdminOrganizersPage() {
 
       // Get event counts for each organizer
       const organizersWithEventCounts = await Promise.all(
-        data.map(async (organizer) => {
+        data.map(async (organizer: { id: string; full_name: string; phone: string; avatar_url?: string; role: string; created_at: string }) => {
           const { count } = await supabase
             .from('events')
             .select('*', { count: 'exact' })

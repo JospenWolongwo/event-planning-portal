@@ -25,7 +25,6 @@ import { IOSInstallPrompt } from '@/components/pwa/IOSInstallPrompt'
 import { usePWA } from '@/hooks/usePWA'
 import { isAdmin } from '@/lib/utils/admin'
 import { useAuth } from '@/hooks/useAuth'
-import { isAdminBypassActive, getAdminTestUser } from '@/lib/admin-bypass'
 
 export function Navbar() {
   const { supabase, user: supabaseUser } = useSupabase()
@@ -96,16 +95,12 @@ export function Navbar() {
       // 1. Sign out from Supabase
       await supabase.auth.signOut();
       
-      // 2. Clear any test session data
+      // Clear any remaining auth data
       if (typeof window !== 'undefined') {
-        // Clear all authentication-related localStorage items
-        localStorage.removeItem('test-session');
-        localStorage.removeItem('admin-bypass-user');
-        localStorage.removeItem('admin-bypass-active');
-        localStorage.removeItem('admin-bypass-expires');
+        // Clear auth-related localStorage items
         localStorage.removeItem('supabase.auth.token');
         
-        // Clear any auth storage from Zustand/other state management
+        // Clear any auth storage from state management
         localStorage.removeItem('auth-storage');
       }
       

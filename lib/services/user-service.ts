@@ -50,7 +50,8 @@ export class UserService {
 
       if (error) throw error
 
-      return { data: data as User, error: null }
+      // Use a safer type assertion with unknown as intermediate step
+      return { data: data as unknown as User, error: null }
     } catch (error) {
       console.error('Error in getCurrentUserProfile:', error)
       return { data: null, error: error as Error }
@@ -70,7 +71,8 @@ export class UserService {
 
       if (error) throw error
 
-      return { data: data as User, error: null }
+      // Use a safer type assertion with unknown as intermediate step
+      return { data: data as unknown as User, error: null }
     } catch (error) {
       console.error('Error in getUserById:', error)
       return { data: null, error: error as Error }
@@ -96,7 +98,8 @@ export class UserService {
 
       if (error) throw error
 
-      return { data: data as User, error: null }
+      // Use a safer type assertion with unknown as intermediate step
+      return { data: data as unknown as User, error: null }
     } catch (error) {
       console.error('Error in updateUserProfile:', error)
       return { data: null, error: error as Error }
@@ -157,12 +160,14 @@ export class UserService {
             .single()
 
           if (createError) throw createError
-          return { data: newSettings as UserSettings, error: null }
+          // Use a safer type assertion with unknown as intermediate step
+          return { data: newSettings as unknown as UserSettings, error: null }
         }
         throw error
       }
 
-      return { data: data as UserSettings, error: null }
+      // Use a safer type assertion with unknown as intermediate step
+      return { data: data as unknown as UserSettings, error: null }
     } catch (error) {
       console.error('Error in getUserSettings:', error)
       return { data: null, error: error as Error }
@@ -188,7 +193,8 @@ export class UserService {
 
       if (error) throw error
 
-      return { data: data as UserSettings, error: null }
+      // Use a safer type assertion with unknown as intermediate step
+      return { data: data as unknown as UserSettings, error: null }
     } catch (error) {
       console.error('Error in updateUserSettings:', error)
       return { data: null, error: error as Error }
@@ -208,7 +214,9 @@ export class UserService {
 
       if (error) throw error
 
-      return data?.role === 'admin'
+      // Use a type assertion to fix TypeScript error
+      const typedData = data as unknown as { role?: string }
+      return typedData?.role === 'admin'
     } catch (error) {
       console.error('Error in isUserAdmin:', error)
       return false

@@ -71,7 +71,7 @@ export default function EventsPage() {
         }
         
         // Transform the data to include organizer information
-        const formattedEvents = eventsData.map(event => ({
+        const formattedEvents = eventsData.map((event: { id: string; title: string; description: string; event_date: string; event_time: string; location: string; price: number; capacity: number; image_url?: string; profiles: any }) => ({
           ...event,
           organizer: event.profiles,
           // Use a default image if none is provided
@@ -94,11 +94,11 @@ export default function EventsPage() {
     fetchEvents()
   }, [supabase, currentPage, setEvents, setLoading, setTotalPages])
 
-  const formatEventTime = (date, time) => {
+  const formatEventTime = (date: string, time: string): string => {
     return `${date} at ${time}`;
   };
 
-  const handleRegistration = (event) => {
+  const handleRegistration = (event: { id: string }) => {
     router.push(`/events/${event.id}`);
   };
 

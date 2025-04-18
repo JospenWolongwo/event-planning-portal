@@ -195,7 +195,7 @@ export default function AboutPage() {
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[1, 2, 3, 4].map((i) => (
+            {["Jospen Wolongwo", 2, 3, 4].map((i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}

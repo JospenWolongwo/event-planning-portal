@@ -137,7 +137,13 @@ export class EventService {
       const { data, error } = await query
       if (error) throw error
 
-      return { data, count, error: null }
+      // Handle type conversion more safely by checking if data exists and has array methods
+      if (!data || !Array.isArray(data)) {
+        return { data: [], count, error: null }
+      }
+      
+      // Use type assertion only after validation
+      return { data: data as unknown as Event[], count, error: null }
     } catch (error) {
       console.error('Error in getEvents:', error)
       return { data: null, count: null, error: error as Error }
@@ -152,14 +158,17 @@ export class EventService {
     pagination?: PaginationOptions
   ): Promise<{ data: Event[] | null; count: number | null; error: Error | null }> {
     try {
+      // Get current date to filter for upcoming events
+      const currentDate = new Date().toISOString().split('T')[0] // Format: YYYY-MM-DD
+      
       // Build count query for pagination
       let countQuery = this.supabase
-        .from('events') // Using the new events table
+        .from('events')
         .select('id', { count: 'exact' })
-        .gt('event_date', new Date().toISOString().split('T')[0]) // Filter by upcoming date
+        .gte('event_date', currentDate) // Only future or today's events
         .eq('status', 'active') // Only active events
 
-      // Apply filters to count query
+      // Apply additional filters to count query
       if (filters) {
         if (filters.location) {
           countQuery = countQuery.eq('location', filters.location)
@@ -173,6 +182,13 @@ export class EventService {
         if (filters.maxPrice !== undefined) {
           countQuery = countQuery.lte('price', filters.maxPrice)
         }
+        // Don't apply status filter as we're forcing 'active' for upcoming events
+        if (filters.fromDate && filters.fromDate > currentDate) {
+          countQuery = countQuery.gte('event_date', filters.fromDate)
+        }
+        if (filters.toDate) {
+          countQuery = countQuery.lte('event_date', filters.toDate)
+        }
       }
 
       const { count, error: countError } = await countQuery
@@ -180,16 +196,16 @@ export class EventService {
 
       // Build data query
       let query = this.supabase
-        .from('events') // Using the new events table
+        .from('events')
         .select(`
           *,
           organizer:profiles(id, full_name, avatar_url)
         `)
-        .gt('event_date', new Date().toISOString().split('T')[0]) // Filter by upcoming date
+        .gte('event_date', currentDate) // Only future or today's events
         .eq('status', 'active') // Only active events
-        .order('event_date', { ascending: true }) // Order by date
+        .order('event_date', { ascending: true }) // Order by event date
 
-      // Apply filters
+      // Apply additional filters
       if (filters) {
         if (filters.location) {
           query = query.eq('location', filters.location)
@@ -216,7 +232,13 @@ export class EventService {
       const { data, error } = await query
       if (error) throw error
 
-      return { data, count, error: null }
+      // Handle type conversion more safely by checking if data exists and has array methods
+      if (!data || !Array.isArray(data)) {
+        return { data: [], count, error: null }
+      }
+      
+      // Use type assertion only after validation
+      return { data: data as unknown as Event[], count, error: null }
     } catch (error) {
       console.error('Error in getUpcomingEvents:', error)
       return { data: null, count: null, error: error as Error }
@@ -241,12 +263,19 @@ export class EventService {
       if (error) throw error
 
       // Process data to calculate available capacity
-      const processedEvent = data ? {
-        ...data,
-        seats_available: data.capacity - (data.registrations?.reduce((sum: number, r: any) => sum + (r.status === 'confirmed' ? 1 : 0), 0) || 0)
+      // Use proper typing to ensure we can access properties correctly
+      const typedData = data as unknown as {
+        capacity: number;
+        registrations?: { status: string }[];
+        [key: string]: any;
+      };
+      
+      const processedEvent = data && typeof data === 'object' ? {
+        ...typedData,
+        seats_available: typedData.capacity - (typedData.registrations?.reduce((sum: number, r: any) => sum + (r.status === 'confirmed' ? 1 : 0), 0) || 0)
       } : null
 
-      return { data: processedEvent as Event | null, error: null }
+      return { data: processedEvent as unknown as Event | null, error: null }
     } catch (error) {
       console.error('Error in getEventById:', error)
       return { data: null, error: error as Error }
