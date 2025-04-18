@@ -4,8 +4,16 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-// Create a Supabase client with fallback values
-// During build time, this will use dummy values but won't actually make API calls
+// Get the correct site URL for auth redirects - critical for magic links
+const siteUrl = typeof window !== 'undefined' 
+  ? window.location.origin 
+  : (process.env.NEXT_PUBLIC_SITE_URL || 'https://event-planning-portal-1.vercel.app');
+
+console.log('Supabase client using site URL for redirects:', siteUrl);
+
+// Create a Supabase client with proper configuration
+// Note: we don't use the 'site' property since it's not supported in the current version
+// Instead, we explicitly set the redirect URL in each auth call
 const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
   global: {
     fetch: (url, options = {}) => {
@@ -21,7 +29,7 @@ const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
   },
   auth: {
     persistSession: true,
-    autoRefreshToken: true,
+    autoRefreshToken: true
   }
 });
 

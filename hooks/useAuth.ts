@@ -35,14 +35,21 @@ export const useAuth = create<AuthState>()(
         try {
           console.log('Signing in with email:', email)
           
-          // Use the site URL from env vars with fallback for local development
-          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-          console.log('Using site URL for redirect:', siteUrl);
+          // Use window.location.origin to ALWAYS get the current site URL
+          // This is critical for magic links to work correctly
+          const currentUrl = window.location.origin;
+          const deployedUrl = 'https://event-planning-portal-1.vercel.app';
           
-          // Use the auth.config helper to get a consistent redirect URL
-          const redirectTo = getRedirectUrl('/auth/callback');
-          console.log('Email redirect URL:', redirectTo);
+          // Determine which URL to use - prioritize deployed URL if we detect we're on it
+          const useUrl = currentUrl.includes('vercel.app') ? currentUrl : deployedUrl;
+          console.log('Current browser URL:', currentUrl);
+          console.log('Using redirect URL:', useUrl);
           
+          // Construct the complete redirect URL
+          const redirectTo = `${useUrl}/auth/callback`;
+          console.log('Complete email redirect URL:', redirectTo);
+          
+          // Force Supabase to use our explicit redirect URL
           const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
