@@ -1,11 +1,11 @@
 {
-  "name": "PikDrive",
-  "short_name": "PikDrive",
-  "description": "Your personal cloud storage solution",
+  "name": "Event Portal",
+  "short_name": "Event Portal",
+  "description": "Discover, plan, and attend amazing events",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#28C496",
   "orientation": "portrait",
   "icons": [
     {

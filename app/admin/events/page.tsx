@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/providers/SupabaseProvider'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { EventForm } from './event-form'
+import { isAdmin as checkIsAdmin } from '@/lib/utils/admin'
+import { isAdminBypassActive, getAdminTestUser } from '@/lib/admin-bypass'
 
 export default function AdminEventsPage() {
   const { supabase, user } = useSupabase()
@@ -37,38 +39,35 @@ export default function AdminEventsPage() {
   // Check if user is admin
   useEffect(() => {
     const checkAdmin = async () => {
-      if (!user) {
-        router.push('/auth?redirect=/admin/events')
+      // First check for admin bypass - this is the simplest and most direct check
+      if (isAdminBypassActive()) {
+        console.log('Admin bypass active in events page, granting access')
+        setIsAdmin(true)
+        loadEvents()
         return
       }
 
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-
-        if (error) throw error
-
-        if (data?.role !== 'admin') {
-          toast.error('You do not have permission to access this page')
-          router.push('/')
-          return
-        }
-
-        setIsAdmin(true)
-      } catch (error) {
-        console.error('Error checking admin status:', error)
-        toast.error('An error occurred. Please try again.')
-        router.push('/')
+      if (!user) {
+        router.push('/auth?redirectTo=/admin/events')
+        return
       }
+
+      // Check if user is admin using our utility function
+      if (!checkIsAdmin(user)) {
+        toast.error('You do not have permission to access this page')
+        router.push('/')
+        return
+      }
+
+      setIsAdmin(true)
+      loadEvents()
     }
 
     checkAdmin()
-  }, [user, router, supabase])
+  }, [user, router])
 
   const loadEvents = async () => {
+    console.log('Loading events...')
     if (!isAdmin) return
 
     try {
@@ -102,19 +101,37 @@ export default function AdminEventsPage() {
       loadEvents()
     }
   }, [isAdmin, activeTab, currentPage])
+  
+  // Add this ref to track when to reload events
+  const shouldReloadEvents = React.useRef(false)
 
   const handleCreateEvent = async (eventData: Partial<Event>) => {
     try {
+      // Make sure we have a valid organizer_id, even when using admin bypass
+      if (!eventData.organizer_id) {
+        const testUser = getAdminTestUser();
+        if (testUser) {
+          eventData.organizer_id = testUser.id;
+        }
+      }
+
       const { data, error } = await eventService.createEvent(eventData)
 
       if (error) throw error
 
       toast.success('Event created successfully')
       setIsCreateDialogOpen(false)
-      loadEvents()
+      
+      // Immediate reload of events to show the new event
+      await loadEvents()
+      
+      // Force a second reload after a short delay to ensure any database propagation delay
+      setTimeout(() => {
+        loadEvents()
+      }, 500)
     } catch (error) {
       console.error('Error creating event:', error)
-      toast.error('Failed to create event')
+      toast.error('Failed to create event: ' + (error instanceof Error ? error.message : String(error)))
     }
   }
 

@@ -16,8 +16,11 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
   const [user, setUser] = useState<any>(null)
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
+    
     const initializeAuth = async () => {
       try {
         const { data: { session: initialSession }, error } = await supabase.auth.getSession()
@@ -45,6 +48,11 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
       subscription.unsubscribe()
     }
   }, [supabase])
+
+  // Prevent hydration errors by only rendering children when mounted
+  if (!mounted) {
+    return null
+  }
 
   return (
     <SupabaseContext.Provider value={{ supabase, user, session, loading }}>

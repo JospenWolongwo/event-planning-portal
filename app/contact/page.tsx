@@ -33,17 +33,17 @@ export default function ContactPage() {
     {
       icon: Phone,
       title: "Phone",
-      details: ["+237 698 805 890", "+237 674 123 456"],
+      details: ["+237 678 901 234", "+237 655 432 109"],
     },
     {
       icon: Mail,
       title: "Email",
-      details: ["support@pikdrive.com", "info@pikdrive.com"],
+      details: ["support@eventportal.com", "info@eventportal.com"],
     },
     {
       icon: MapPin,
       title: "Office",
-      details: ["Silicon Mountain", "Buea, Cameroon"],
+      details: ["Tech Hub", "Douala, Cameroon"],
     },
   ]
 
@@ -59,7 +59,7 @@ export default function ContactPage() {
             Get in Touch
           </h1>
           <p className="text-xl text-muted-foreground">
-            Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            Questions about event planning? Need help with registration? We&apos;re here to assist you with all your event needs.
           </p>
         </motion.div>
 

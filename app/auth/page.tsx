@@ -4,11 +4,14 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-import { Phone, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { ArrowRight, Lock, Loader2, Mail, User, Key, Bug } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BsCalendarEvent } from "react-icons/bs";
+// Simplified authentication approach - no separate admin bypass needed
 
 export default function AuthPage() {
   return (
@@ -19,57 +22,52 @@ export default function AuthPage() {
 }
 
 function AuthContent() {
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
   const [error, setError] = useState("");
-  const [savedPhone, setSavedPhone] = useState<string | null>(null);
-  const { signIn, verifyOTP } = useAuth();
+  const [savedEmail, setSavedEmail] = useState<string | null>(null);
+  // Simplified auth - no need for multiple test options
+  const { signInWithEmail, testSignIn } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check for saved phone number
-    const lastPhone = localStorage.getItem("lastPhoneNumber");
-    if (lastPhone) {
-      setSavedPhone(lastPhone);
+    // Check for saved email
+    const lastEmail = localStorage.getItem("lastEmail");
+    if (lastEmail) {
+      setSavedEmail(lastEmail);
     }
-  }, []);
 
-  const formatPhoneNumber = (phone: string) => {
-    return phone.startsWith("+") ? phone : `+237${phone.replace(/^237/, "")}`;
-  };
-
-  const maskPhoneNumber = (phone: string) => {
-    const formatted = formatPhoneNumber(phone);
-    return `****${formatted.slice(-4)}`;
-  };
+    // Check for redirect parameter
+    const redirectTo = searchParams.get("redirectTo");
+    if (redirectTo) {
+      console.log("Redirect after login:", redirectTo);
+    }
+  }, [searchParams]);
 
   const handleContinue = async () => {
     setError("");
 
-    if (!phone && !savedPhone) {
-      setError("Please enter your phone number");
+    // Email authentication
+    if (!email && !savedEmail) {
+      setError("Please enter your email address");
       return;
     }
 
     setIsLoading(true);
     try {
-      const phoneToUse = phone || savedPhone || "";
-      const formattedPhone = formatPhoneNumber(phoneToUse);
-
-      const { error: signInError } = await signIn(formattedPhone);
+      const emailToUse = email || savedEmail || "";
+      
+      const { error: signInError } = await signInWithEmail(emailToUse);
       if (signInError) throw new Error(signInError);
 
-      // Save phone number for future use
-      localStorage.setItem("lastPhoneNumber", formattedPhone);
+      // Save email for future use
+      localStorage.setItem("lastEmail", emailToUse);
 
-      setShowVerification(true);
       toast({
-        title: "Code sent!",
-        description: "Please check your phone for the verification code",
+        title: "Magic link sent!",
+        description: "Please check your email for the login link",
       });
     } catch (error: any) {
       setError(error.message);
@@ -78,36 +76,16 @@ function AuthContent() {
     }
   };
 
-  const handleVerify = async () => {
-    setError("");
-
-    if (!code) {
-      setError("Please enter the verification code");
-      return;
-    }
-
+  const handleTestSignIn = async () => {
     setIsLoading(true);
     try {
-      const phoneToUse = phone || savedPhone || "";
-      const formattedPhone = formatPhoneNumber(phoneToUse);
-
-      const { error: verifyError, data } = await verifyOTP(
-        formattedPhone,
-        code
-      );
-      if (verifyError) throw new Error(verifyError);
-
-      if (!data?.user) {
-        throw new Error("Verification successful but no user returned");
-      }
-
+      // For the test application, we're just using the 'admin' role for simplicity
+      await testSignIn('admin');
+      
       toast({
-        title: "Welcome back!",
-        description: "You've successfully signed in",
+        title: "Test login successful!",
+        description: "You now have access to all features",
       });
-
-      const redirectTo = searchParams.get("redirectTo");
-      router.push(redirectTo || "/");
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -115,122 +93,94 @@ function AuthContent() {
     }
   };
 
+  // No need for toggling test options in simplified approach
+
   return (
-    <div className="container flex items-center justify-center min-h-[calc(100vh-4rem)]">
+    <div className="flex min-h-screen flex-col items-center justify-center py-12 sm:px-6 lg:px-8 bg-background">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary"
+        >
+          <BsCalendarEvent className="h-6 w-6 text-primary-foreground" />
+        </motion.div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight">
+          Sign in to Event Portal
+        </h2>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Access your account to manage events and bookings
+        </p>
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md space-y-6 p-6 bg-card rounded-lg border shadow-sm"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="mt-8 sm:mx-auto sm:w-full sm:max-w-md"
       >
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Welcome to PikDrive
-          </h1>
-          <p className="text-muted-foreground">
-            {showVerification
-              ? "Enter the verification code sent to your phone"
-              : savedPhone
-              ? "Welcome back! Should we send a code to your phone?"
-              : "Enter your phone number to continue"}
-          </p>
-        </div>
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="space-y-4">
-          {!showVerification && !savedPhone && (
-            <div className="space-y-2">
-              <div className="relative">
-                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Enter phone number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="pl-9"
-                  type="tel"
-                />
-              </div>
-            </div>
+        <div className="bg-card px-4 py-8 shadow sm:rounded-lg sm:px-10">
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
-          {!showVerification && savedPhone && (
+          <div className="space-y-6">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-center">
-                Send code to {maskPhoneNumber(savedPhone)}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setSavedPhone(null)}
-                >
-                  Use different number
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={handleContinue}
+              <Label htmlFor="email">Email address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder=""
+                  className="pl-10"
+                  value={email || savedEmail || ""}
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Send Code"
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {showVerification && (
-            <div className="space-y-2">
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Enter verification code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="pl-9"
-                  type="number"
-                  maxLength={6}
                 />
               </div>
+              {email === "jospenwolongwo@gmail.com" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Admin account detected - you&apos;ll be redirected to the admin dashboard after login
+                </p>
+              )}
             </div>
-          )}
+            
+            <div>
+              <Button
+                onClick={handleContinue}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Please wait...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
 
-          {!showVerification && !savedPhone && (
-            <Button
-              className="w-full"
-              onClick={handleContinue}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          )}
-
-          {showVerification && (
-            <Button
-              className="w-full"
-              onClick={handleVerify}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Verify"
-              )}
-            </Button>
-          )}
+            <div className="text-center text-sm">
+              <p className="text-muted-foreground">
+                We&apos;ll send you a magic link to log in
+              </p>
+            </div>
+            
+            <div className="text-center text-sm mt-4">
+              <p className="text-muted-foreground">
+                Enter your email above and click Continue to sign in
+              </p>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

@@ -11,6 +11,9 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
+  // Check for test user in localStorage (client-side only)
+  // This won't work in middleware, but we'll handle test users in the layout components
+
   // Protected routes that require authentication
   const protectedPaths = [
     '/profile',           // User profile settings

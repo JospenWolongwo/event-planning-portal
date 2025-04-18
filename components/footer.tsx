@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Car, Facebook, Instagram, Twitter } from 'lucide-react'
+import { Calendar, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react'
+import { BsCalendarEvent } from 'react-icons/bs'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -12,11 +13,11 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
           <div className="flex flex-col gap-2">
             <Link href="/" className="flex items-center space-x-2">
-              <Car className="h-6 w-6" />
-              <span className="font-bold">PikDrive</span>
+              <BsCalendarEvent className="h-6 w-6" />
+              <span className="font-bold">Event Portal</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Your trusted ride-sharing platform in Cameroon
+              Your comprehensive event planning platform
             </p>
           </div>
 
@@ -24,13 +25,13 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/rides" className="text-muted-foreground hover:text-primary">
-                  Find Rides
+                <Link href="/events" className="text-muted-foreground hover:text-primary">
+                  Browse Events
                 </Link>
               </li>
               <li>
-                <Link href="/become-driver" className="text-muted-foreground hover:text-primary">
-                  Become a Driver
+                <Link href="/create-event" className="text-muted-foreground hover:text-primary">
+                  Create Event
                 </Link>
               </li>
               <li>
@@ -71,7 +72,7 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold">Connect With Us</h3>
             <div className="flex space-x-4">
               <Link
-                href="https://facebook.com"
+                href="https://facebook.com/eventportal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
@@ -80,7 +81,7 @@ export function Footer() {
                 <span className="sr-only">Facebook</span>
               </Link>
               <Link
-                href="https://twitter.com"
+                href="https://twitter.com/eventportal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
@@ -89,7 +90,7 @@ export function Footer() {
                 <span className="sr-only">Twitter</span>
               </Link>
               <Link
-                href="https://instagram.com"
+                href="https://instagram.com/eventportal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-primary"
@@ -97,13 +98,26 @@ export function Footer() {
                 <Instagram className="h-5 w-5" />
                 <span className="sr-only">Instagram</span>
               </Link>
+              <Link
+                href="https://linkedin.com/company/eventportal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary"
+              >
+                <Linkedin className="h-5 w-5" />
+                <span className="sr-only">LinkedIn</span>
+              </Link>
+            </div>
+            <div className="mt-4">
+              <p className="text-sm text-muted-foreground">Email: support@eventportal.com</p>
+              <p className="text-sm text-muted-foreground">Phone: +237 678 901 234</p>
             </div>
           </div>
         </div>
-
-        <div className="mt-8 border-t pt-8">
-          <p className="text-center text-sm text-muted-foreground">
-            {currentYear} PikDrive. All rights reserved.
+        
+        <div className="mt-8 border-t pt-6">
+          <p className="text-center text-xs text-muted-foreground">
+            &copy; {currentYear} Event Portal. All rights reserved.
           </p>
         </div>
       </div>

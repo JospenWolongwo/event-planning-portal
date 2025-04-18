@@ -20,6 +20,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Search, Calendar, Users } from "lucide-react"
+import { isAdmin } from "@/lib/utils/admin"
+import { isAdminBypassActive } from "@/lib/admin-bypass"
 
 interface OrganizerProfile {
   id: string
@@ -46,25 +48,29 @@ export default function AdminOrganizersPage() {
   }, [])
 
   const checkAdminAccess = async () => {
-    if (!user) {
-      router.push('/login')
+    // First check for admin bypass
+    if (isAdminBypassActive()) {
+      console.log('Admin bypass active in organizers page, granting access')
       return
     }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (error || data?.role !== 'admin') {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to view this page.",
-        variant: "destructive"
-      })
-      router.push('/')
+    
+    if (!user) {
+      router.push('/auth?redirectTo=/admin/organizers')
+      return
     }
+    
+    // Check if user is admin using our utility function
+    if (isAdmin(user)) {
+      return
+    }
+    
+    // If not admin, redirect to home
+    router.push('/')
+    toast({
+      title: "Access Denied",
+      description: "You don't have permission to access this page",
+      variant: "destructive"
+    })
   }
 
   const loadOrganizers = async () => {

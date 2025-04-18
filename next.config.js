@@ -128,13 +128,44 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
+    domains: [
+      'avatars.githubusercontent.com', 
+      'lh3.googleusercontent.com',
+      'images.unsplash.com',
+      'source.unsplash.com',
+      'picsum.photos',
+      'cloudinary.com',
+      'res.cloudinary.com',
+      'images.pexels.com',
+      'localhost'
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      }
+    ],
   },
   experimental: {
     // serverActions are enabled by default in Next.js 14.1.0
   },
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  webpack: (config, { isServer }) => {
+    // Fixes npm packages that depend on `ws` module
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        bufferutil: false,
+        'utf-8-validate': false,
+      };
+    }
+    return config;
   },
 };
 

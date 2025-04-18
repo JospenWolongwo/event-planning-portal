@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from 'next'
+import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/app/providers'
@@ -11,7 +11,7 @@ import { Analytics } from '@vercel/analytics/react'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const viewport: Viewport = {
+export const viewport = {
   themeColor: '#28C496',
   width: 'device-width',
   initialScale: 1,
@@ -21,12 +21,12 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'PikDrive - Your Trusted Intercity Ride-Sharing Platform',
-  description: 'Connect with trusted drivers for safe and affordable intercity travel in Cameroon.',
-  applicationName: 'PikDrive',
+  title: 'Event Portal - Your Comprehensive Event Planning Platform',
+  description: 'Discover, plan, and attend amazing events with our comprehensive event management platform.',
+  applicationName: 'Event Portal',
   appleWebApp: {
     capable: true,
-    title: 'PikDrive',
+    title: 'Event Portal',
     statusBarStyle: 'default',
   },
   formatDetection: {
@@ -68,7 +68,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="PikDrive" />
+        <meta name="apple-mobile-web-app-title" content="Event Portal" />
         <meta name="theme-color" content="#28C496" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>

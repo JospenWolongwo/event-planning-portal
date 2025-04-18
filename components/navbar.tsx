@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, Sun, Moon, LogOut, User, Calendar, BookOpen, Download, Settings, LayoutDashboard } from 'lucide-react'
+import { Menu, Sun, Moon, LogOut, User, Calendar, BookOpen, Download, Settings, LayoutDashboard, PlusCircle, Shield } from 'lucide-react'
 import { BsWhatsapp } from 'react-icons/bs'
 import { PhoneCall, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -23,9 +23,13 @@ import { useShowAndroidPrompt } from '@/hooks/use-show-android-prompt'
 import { useDeviceDetect } from '@/hooks/useDeviceDetect';
 import { IOSInstallPrompt } from '@/components/pwa/IOSInstallPrompt'
 import { usePWA } from '@/hooks/usePWA'
+import { isAdmin } from '@/lib/utils/admin'
+import { useAuth } from '@/hooks/useAuth'
+import { isAdminBypassActive, getAdminTestUser } from '@/lib/admin-bypass'
 
 export function Navbar() {
-  const { supabase, user } = useSupabase()
+  const { supabase, user: supabaseUser } = useSupabase()
+  const { user: authUser } = useAuth()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false)
@@ -35,6 +39,9 @@ export function Navbar() {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
+
+  // Simplified user detection - just use the authenticated user from either source
+  const user = supabaseUser || authUser;
 
   useEffect(() => {
     setMounted(true);
@@ -49,26 +56,68 @@ export function Navbar() {
     if (user) {
       const getOrganizerStatus = async () => {
         const { data } = await supabase
+          .from('organizers')
+          .select('status')
+          .eq('user_id', user.id)
+          .single()
+
+        if (data) {
+          setIsOrganizer(true)
+          setOrganizerStatus(data.status)
+        }
+
+        // Check if user is admin
+        const userIsAdmin = isAdmin(user);
+        if (userIsAdmin) {
+          setIsOrganizer(true);
+          setOrganizerStatus('approved');
+        }
+
+        // Get avatar URL
+        const { data: profileData } = await supabase
           .from('profiles')
-          .select('is_organizer, organizer_status, avatar_url')
+          .select('avatar_url')
           .eq('id', user.id)
           .single()
-        
-        setIsOrganizer(data?.is_organizer || false)
-        setOrganizerStatus(data?.organizer_status || null)
-        if (data?.avatar_url) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(data.avatar_url)
-          setAvatarUrl(publicUrl)
+
+        if (profileData?.avatar_url) {
+          setAvatarUrl(profileData.avatar_url)
         }
       }
+
       getOrganizerStatus()
     }
-  }, [user, supabase])
+  }, [supabase, user])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      // Perform a complete logout by clearing all auth data
+      
+      // 1. Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // 2. Clear any test session data
+      if (typeof window !== 'undefined') {
+        // Clear all authentication-related localStorage items
+        localStorage.removeItem('test-session');
+        localStorage.removeItem('admin-bypass-user');
+        localStorage.removeItem('admin-bypass-active');
+        localStorage.removeItem('admin-bypass-expires');
+        localStorage.removeItem('supabase.auth.token');
+        
+        // Clear any auth storage from Zustand/other state management
+        localStorage.removeItem('auth-storage');
+      }
+      
+      // 3. Force a complete page reload to reset all state
+      window.location.href = '/';
+      
+      console.log('Successfully signed out');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      // Force redirect even if there's an error
+      window.location.href = '/';
+    }
   }
 
   const menuItems = [
@@ -288,8 +337,28 @@ export function Navbar() {
                     <span>{isOrganizer ? "Organizer Profile" : "Profile"}</span>
                   </Link>
                 </DropdownMenuItem>
+                
+                {/* Admin Section - available to all authenticated users in simplified app */}
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/dashboard" className="flex items-center">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/events" className="flex items-center">
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Create Event
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+                
+                {/* Organizer Section - only show if not showing admin section */}
                 {isOrganizer && organizerStatus === 'approved' && (
                   <>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/organizer/dashboard" className="flex items-center">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -299,19 +368,12 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link href="/organizer/events" className="flex items-center">
                         <BookOpen className="mr-2 h-4 w-4" />
-                        Events
+                        My Events
                       </Link>
                     </DropdownMenuItem>
                   </>
                 )}
-                {isOrganizer && organizerStatus === 'pending' && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/organizer/pending" className="flex items-center">
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Application Status</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
+                
                 <DropdownMenuItem asChild>
                   <Link href="/bookings" className="flex items-center">
                     <Calendar className="mr-2 h-4 w-4" />
