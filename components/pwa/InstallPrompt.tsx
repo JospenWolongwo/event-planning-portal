@@ -73,7 +73,7 @@ export function InstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-[360px] bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 z-50 border border-gray-200 dark:border-gray-700">
       <div className="flex items-start justify-between">
         <div className="flex-1 mr-4">
-          <h3 className="font-semibold text-lg mb-1">Install PikDrive</h3>
+          <h3 className="font-semibold text-lg mb-1">Install Event Portal</h3>
           <p className="text-sm text-gray-600 dark:text-gray-300">
             Install our app for a better experience with quick access and offline features
           </p>

@@ -20,16 +20,16 @@ export function AndroidInstallPrompt({ show, onClose, onInstall }: AndroidInstal
     <Dialog open={show} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Install PikDrive</DialogTitle>
+          <DialogTitle>Install Event Portal</DialogTitle>
           <DialogDescription>
-            Install PikDrive on your device for the best experience:
+            Install Event Portal on your device for the best experience:
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-sm">
             <li>Tap &quot;Add to Home Screen&quot; when prompted</li>
             <li>Or click &quot;Install&quot; in your browser menu</li>
-            <li>Access PikDrive directly from your home screen</li>
+            <li>Access Event Portal directly from your home screen</li>
             <li>Get a faster, app-like experience</li>
           </ul>
           <div className="flex justify-end gap-3">

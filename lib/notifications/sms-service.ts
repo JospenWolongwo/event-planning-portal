@@ -94,7 +94,7 @@ export class SMSService {
     bookingId: string;
   }): string {
     const { amount, provider, transactionId, bookingId } = data;
-    return `PikDrive: Payment confirmed! ${amount} XAF via ${provider}. ID: ${transactionId}. Booking: ${bookingId}. Safe travels! 🚗`;
+    return `Event Portal: Payment confirmed! ${amount} XAF via ${provider}. ID: ${transactionId}. Booking: ${bookingId}. Enjoy your event! 🎉`;
   }
 
   /**
@@ -106,7 +106,7 @@ export class SMSService {
     bookingId: string;
   }): string {
     const { amount, provider, bookingId } = data;
-    return `PikDrive: Payment of ${amount} XAF via ${provider} failed. Please try again or contact support. Booking: ${bookingId}`;
+    return `Event Portal: Payment of ${amount} XAF via ${provider} failed. Please try again or contact support. Booking: ${bookingId}`;
   }
 
   /**
@@ -118,7 +118,7 @@ export class SMSService {
     bookingId: string;
   }): string {
     const { driverName, pickupTime, bookingId } = data;
-    return `PikDrive: Your ride is confirmed! Driver: ${driverName}. Pickup: ${pickupTime}. Booking: ${bookingId}. Have a great ride! 🚗`;
+    return `Event Portal: Your event registration is confirmed! Event: ${driverName}. Time: ${pickupTime}. Booking: ${bookingId}. Enjoy your event! 🎉`;
   }
 
   /**
@@ -130,7 +130,7 @@ export class SMSService {
     success: boolean
   ): Promise<{ success: boolean; messageId?: string; error?: string; sandbox?: boolean; message?: string }> {
     const message = success
-      ? `✅ Your payment of ${amount} XAF has been successfully processed. Thank you for using PikDrive!`
+      ? `✅ Your payment of ${amount} XAF has been successfully processed. Thank you for using Event Portal!`
       : `❌ Your payment of ${amount} XAF was not successful. Please try again or contact support if the issue persists.`;
 
     return this.sendMessage({

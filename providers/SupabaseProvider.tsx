@@ -37,7 +37,9 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
         auth: {
           autoRefreshToken: true,
           persistSession: true,
-          flowType: 'pkce'
+          // Disabled PKCE flow to avoid code verifier mismatch errors
+          // Use the default implicit flow instead
+          flowType: 'implicit'
         },
         cookieOptions: {
           path: '/',

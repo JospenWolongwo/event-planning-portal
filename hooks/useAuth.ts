@@ -35,22 +35,24 @@ export const useAuth = create<AuthState>()(
         try {
           console.log('Signing in with email:', email)
           
-          // ALWAYS use the production URL for the magic link
-          // This is the only reliable way to make sure the links work properly
+          // Turn off PKCE flow completely for the magic link flow
+          // This should avoid the code verifier mismatch errors
+          console.log('Using default magic link flow with explicit redirect URL')
+          
+          // Always use production URL for consistent behavior
           const productionUrl = 'https://event-planning-portal-1.vercel.app';
-          console.log('FORCE using production URL for magic link:', productionUrl);
           
-          // Construct the complete redirect URL with production URL only
-          const redirectTo = `${productionUrl}/auth/callback`;
-          console.log('Complete email redirect URL:', redirectTo);
-          
-          // Force Supabase to use our explicit redirect URL
           const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
-              emailRedirectTo: redirectTo,
+              // Set explicit redirect URL
+              emailRedirectTo: `${productionUrl}/auth/callback`,
+              // Use default flow, not PKCE to avoid cookie issues
+              shouldCreateUser: true,
             }
           })
+          
+          console.log(`Magic link sent to ${email} with redirect to ${productionUrl}/auth/callback`)
 
           if (error) throw error
           console.log('Magic link sent successfully')

@@ -165,7 +165,7 @@ export class PaymentService {
       phoneNumber: formattedPhone,
       externalId: payment.id,
       payerMessage: `Payment for booking ${request.bookingId}`,
-      payeeNote: `PikDrive booking payment`,
+      payeeNote: `Event Portal registration payment`,
       callbackUrl: `${process.env.MOMO_CALLBACK_HOST}/api/payments/callback`
     });
 
@@ -204,7 +204,7 @@ export class PaymentService {
       const response = await this.orangeMoneyService.initiatePayment({
         amount: request.amount,
         phoneNumber: formattedPhone,
-        description: `PikDrive Ride Payment - ${request.bookingId}`,
+        description: `Event Portal Registration Payment - ${request.bookingId}`,
         externalId: payment.id,
       });
 

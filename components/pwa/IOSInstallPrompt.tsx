@@ -28,9 +28,9 @@ export function IOSInstallPrompt({ show, onClose }: IOSInstallPromptProps) {
     <Dialog open={show} onOpenChange={handleDismiss}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Install PikDrive App</DialogTitle>
+          <DialogTitle>Install Event Portal App</DialogTitle>
           <DialogDescription>
-            Follow these steps to add PikDrive to your Home Screen
+            Follow these steps to add Event Portal to your Home Screen
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 text-sm">

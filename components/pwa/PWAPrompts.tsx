@@ -100,9 +100,9 @@ export default function PWAPrompts() {
         }}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Install PikDrive App</DialogTitle>
+              <DialogTitle>Install Event Portal App</DialogTitle>
               <DialogDescription>
-                Get quick access and a better experience by installing PikDrive on your device.
+                Get quick access and a better experience by installing Event Portal on your device.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
