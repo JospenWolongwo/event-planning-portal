@@ -45,6 +45,15 @@ function AuthContent() {
     if (redirectTo) {
       console.log("Redirect after login:", redirectTo);
     }
+    
+    // Check for error parameters from callback
+    const error = searchParams.get("error");
+    const errorDescription = searchParams.get("errorDescription");
+    
+    if (error) {
+      console.error("Auth error:", error, errorDescription);
+      setError(errorDescription || "Authentication failed. Please try again.");
+    }
   }, [searchParams]);
 
   const handleContinue = async () => {

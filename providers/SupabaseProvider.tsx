@@ -8,6 +8,9 @@ const SupabaseContext = createContext<any>(null)
 export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [supabase] = useState(() => {
     // Create browser client with headers to fix 406 errors
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    console.log('Using site URL:', siteUrl);
+    
     const client = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -23,6 +26,13 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
               }
             })
           }
+        },
+        auth: {
+          flowType: 'pkce',
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true,
+          redirectTo: `${siteUrl}/auth/callback`
         }
       }
     )
