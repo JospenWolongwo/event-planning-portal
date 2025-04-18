@@ -38,10 +38,14 @@ export const useAuth = create<AuthState>()(
           const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
           console.log('Using site URL for redirect:', siteUrl);
           
+          // Create email redirect URL
+          const redirectTo = new URL('/auth/callback', siteUrl).toString();
+          console.log('Email redirect URL:', redirectTo);
+          
           const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
-              emailRedirectTo: `${siteUrl}/auth/callback`,
+              emailRedirectTo: redirectTo,
             }
           })
 

@@ -28,11 +28,12 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
           }
         },
         auth: {
-          flowType: 'pkce',
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: true,
-          redirectTo: `${siteUrl}/auth/callback`
+          detectSessionInUrl: true
+        },
+        cookieOptions: {
+          path: '/'
         }
       }
     )
