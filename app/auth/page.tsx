@@ -34,43 +34,44 @@ function AuthContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check for saved email
-    const lastEmail = localStorage.getItem("lastEmail");
+    // Check for email in localStorage
+    const lastEmail = localStorage.getItem('lastEmail');
     if (lastEmail) {
       setSavedEmail(lastEmail);
     }
 
-    // Check for redirect parameter
-    const redirectTo = searchParams.get("redirectTo");
-    if (redirectTo) {
-      console.log("Redirect after login:", redirectTo);
-    }
-    
-    // Check for error parameters from callback
-    const error = searchParams.get("error");
-    const errorDescription = searchParams.get("errorDescription");
-    
+    // Get error info from URL if available
+    const error = searchParams?.get('error');
+    const errorDescription = searchParams?.get('errorDescription');
+
+    // Log any auth errors to help debug issues
     if (error) {
-      console.error("Auth error:", error, errorDescription);
+      console.error('Auth page loaded with error:', error, errorDescription);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       
-      if (error === 'access_denied' && errorDescription?.includes('expired')) {
-        // Handle expired link error specifically
-        setError("The magic link has expired. Please request a new one.");
-      } else if (error === 'session_error') {
-        // Handle session errors like PKCE issues
-        setError("Authentication error. Please try again with a new magic link.");
-      } else if (error === 'no_code') {
-        // Handle missing code parameter
-        setError("Invalid authentication link. Please request a new one.");
-      } else {
-        // Handle generic errors
-        setError(errorDescription || "Authentication failed. Please try again.");
+      // Set error message based on error code
+      let errorMessage = '';
+      
+      // Special error handling for different error codes
+      switch(error) {
+        case 'no_code':
+          errorMessage = 'No authentication code was provided. Please try the magic link again or request a new one.';
+          break;
+        case 'session_error':
+          errorMessage = `Session error: ${errorDescription || 'Unknown'}. Please try again with a new magic link.`;
+          break;
+        case 'exchange_error':
+          errorMessage = `Authentication code couldn't be processed: ${errorDescription || 'Unknown'}. Please try again with a new link.`;
+          break;
+        case 'unexpected':
+          errorMessage = 'An unexpected error occurred during authentication. Please try again.';
+          break;
+        default:
+          errorMessage = errorDescription || 'Authentication failed for an unknown reason. Please try again.';
+          break;
       }
       
-      // Automatically scroll to error message
-      setTimeout(() => {
-        document.querySelector('.destructive')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      setError(errorMessage);
     }
   }, [searchParams]);
 
@@ -154,11 +155,18 @@ function AuthContent() {
       >
         <div className="bg-card px-4 py-8 shadow sm:rounded-lg sm:px-10">
           {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="mb-8 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+              <h3 className="text-lg font-semibold mb-2">Authentication Error</h3>
+              <p>{error}</p>
+              <div className="mt-3 text-sm text-red-500">
+                <details>
+                  <summary>Technical details</summary>
+                  <p className="mt-1">Error code: {searchParams?.get('error')}</p>
+                  {searchParams?.get('errorDescription') && <p>Details: {searchParams?.get('errorDescription')}</p>}
+                </details>
+              </div>
+            </div>
           )}
-
           <div className="space-y-6">
             {!magicLinkSent ? (
               <>

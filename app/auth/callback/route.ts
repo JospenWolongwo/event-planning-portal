@@ -1,79 +1,64 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { NextResponse, type NextRequest } from 'next/server'
-import { getSiteUrl } from '@/lib/auth.config'
+import { NextRequest, NextResponse } from 'next/server'
 
 // Force dynamic route handler to avoid static rendering issues
 export const dynamic = 'force-dynamic';
 
+/**
+ * Handle authentication callback from Supabase magic link
+ * Simplified version that avoids complex PKCE handling
+ */
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  
-  // Debug info: log the full URL to help understand what's happening
-  console.log('=== AUTH CALLBACK DEBUGGING INFO ===');
-  console.log('Full callback URL:', request.url);
-  console.log('All cookies present:', request.headers.get('cookie'));
-
   try {
     // Get the code from the URL
+    const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get('code');
-
-    // Handle auth errors
+    
+    console.log('Auth callback received with code:', code ? 'Present' : 'Missing');
+    
+    // Handle error params if present
     const error = requestUrl.searchParams.get('error');
     const errorDescription = requestUrl.searchParams.get('error_description');
     
     if (error) {
-      console.error('Auth error received:', error, errorDescription);
+      console.error(`Auth error: ${error}`, errorDescription);
       return NextResponse.redirect(
-        new URL(`/auth?error=${error}&errorDescription=${errorDescription || ''}`, getSiteUrl())
+        new URL(`/auth?error=${encodeURIComponent(error)}&errorDescription=${encodeURIComponent(errorDescription || 'Unknown error')}`, request.url)
       );
     }
-
+    
+    // If no code, redirect to auth page with error
     if (!code) {
-      // No code means an incomplete authentication request
-      console.warn('No auth code present in callback URL');
-      return NextResponse.redirect(new URL('/auth?error=no_code', getSiteUrl()));
+      console.error('No code in auth callback URL');
+      return NextResponse.redirect(new URL('/auth?error=no_code', request.url));
     }
-
-    // Get cookies and create a supabase server client with explicit configuration
+    
+    // Setup Supabase client
     const cookieStore = cookies();
+    console.log('Cookies in auth callback:', cookieStore.getAll().map(c => c.name).join(', '));
     
-    // Log all the cookies to debug the PKCE flow
-    console.log('Cookies in auth callback:', cookieStore.getAll().map(c => c.name));
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
-    // Create a properly configured supabase client
-    const supabase = createRouteHandlerClient({ 
-      cookies: () => cookieStore,
-    });
-    
-    console.log('Starting code exchange with Supabase...');
-    
-    // Exchange the code for a session - this is the critical step for PKCE flow
-    // We need to make sure the code_verifier cookie is available here
+    // Attempt to exchange the code for a session
+    console.log('Exchanging auth code for session...');
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     
+    // Handle exchange errors
     if (exchangeError) {
-      console.error('Error exchanging code for session:', exchangeError);
+      console.error('Error exchanging code for session:', exchangeError.message);
       return NextResponse.redirect(
-        new URL(`/auth?error=session_error&errorDescription=${exchangeError.message}`, getSiteUrl())
+        new URL(`/auth?error=exchange_error&errorDescription=${encodeURIComponent(exchangeError.message)}`, request.url)
       );
     }
-
-    console.log('Successfully authenticated and created session');
-
-    // If we're here, authentication was successful
-    // Get the redirectTo value or default to homepage
-    const redirectTo = requestUrl.searchParams.get('redirectTo') || '/';
     
-    // Use the site URL from our config
-    const siteUrl = getSiteUrl();
-    console.log('Authentication successful, redirecting to:', `${siteUrl}${redirectTo}`);
+    console.log('Successfully exchanged code for session')
     
-    // Redirect to the intended destination
-    return NextResponse.redirect(new URL(redirectTo, siteUrl));
-    
+    // Always redirect to home page - Auth state will be handled client-side
+    return NextResponse.redirect(new URL('/', request.url));
   } catch (error) {
     console.error('Unexpected error in auth callback:', error);
-    return NextResponse.redirect(new URL('/auth?error=unexpected', getSiteUrl()));
+    // Redirect to auth page with error
+    return NextResponse.redirect(new URL('/auth?error=unexpected', request.url));
   }
 }
