@@ -164,6 +164,13 @@ const nextConfig = {
         bufferutil: false,
         'utf-8-validate': false,
       };
+      
+      // Fix for @radix-ui/react-use-effect-event dependency issue
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Replace the problematic module with an empty module
+        '@radix-ui/react-use-effect-event': require.resolve('./lib/empty-module.js'),
+      };
     }
     return config;
   },

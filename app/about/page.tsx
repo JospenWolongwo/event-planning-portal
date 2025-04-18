@@ -195,7 +195,12 @@ export default function AboutPage() {
           </motion.div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {["Jospen Wolongwo", 2, 3, 4].map((i) => (
+            {[
+              { id: 1, name: "Jospen Wolongwo", role: "Founder & CEO" },
+              { id: 2, name: "Team Member 2", role: "Co-Founder" },
+              { id: 3, name: "Team Member 3", role: "Lead Designer" },
+              { id: 4, name: "Team Member 4", role: "Technical Lead" }
+            ].map((member, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -205,11 +210,11 @@ export default function AboutPage() {
                 className="text-center"
               >
                 <Avatar className="w-32 h-32 mx-auto mb-4">
-                  <AvatarImage src={`/images/team-${i}.jpg`} />
+                  <AvatarImage src={`/images/team-${member.id}.jpg`} />
                   <AvatarFallback>TM</AvatarFallback>
                 </Avatar>
-                <h3 className="font-semibold text-lg">Team Member {i}</h3>
-                <p className="text-muted-foreground">Co-Founder</p>
+                <h3 className="font-semibold text-lg">{member.name}</h3>
+                <p className="text-muted-foreground">{member.role}</p>
               </motion.div>
             ))}
           </div>
