@@ -7,49 +7,21 @@ const SupabaseContext = createContext<any>(null)
 
 export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [supabase] = useState(() => {
-    // Force use of the browser's current URL in client components
-    // This ensures we always use the correct origin for auth redirects
-    const currentUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || currentUrl;
-    
-    if (typeof window !== 'undefined') {
-      console.log('Current browser URL:', window.location.origin);
-      console.log('Environment site URL:', process.env.NEXT_PUBLIC_SITE_URL);
-      console.log('Final site URL being used:', siteUrl);
-    }
-    
-    const client = createBrowserClient(
+    // Create the Supabase client with minimal config to avoid auth issues
+    return createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        global: {
-          fetch: (url, options = {}) => {
-            return fetch(url, {
-              ...options,
-              headers: {
-                ...options.headers,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              }
-            })
-          }
-        },
         auth: {
+          flowType: 'implicit',
           autoRefreshToken: true,
-          persistSession: true,
-          // Disabled PKCE flow to avoid code verifier mismatch errors
-          // Use the default implicit flow instead
-          flowType: 'implicit'
+          persistSession: true
         },
         cookieOptions: {
-          path: '/',
-          sameSite: 'lax',
-          secure: true,
-          domain: typeof window !== 'undefined' ? window.location.hostname : undefined
+          path: '/'
         }
       }
     )
-    return client
   })
 
   const [user, setUser] = useState<any>(null)
@@ -78,7 +50,7 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
 
     initializeAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       setSession(session)
       setUser(session?.user ?? null)
     })
