@@ -2,71 +2,44 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Session } from '@supabase/supabase-js'
 
-const SupabaseContext = createContext<any>(null)
+type SupabaseContextType = {
+  supabase: SupabaseClient
+  session: Session | null
+}
+
+const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
 
 export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [supabase] = useState(() => {
-    // Create the Supabase client with minimal config to avoid auth issues
     return createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          flowType: 'implicit',
-          autoRefreshToken: true,
-          persistSession: true
-        },
-        cookieOptions: {
-          path: '/'
-        }
-      }
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
   })
 
-  const [user, setUser] = useState<any>(null)
-  const [session, setSession] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [mounted, setMounted] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
 
   useEffect(() => {
-    setMounted(true)
-    
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession()
-        if (error) throw error
-        
-        if (initialSession?.user) {
-          setSession(initialSession)
-          setUser(initialSession.user)
-        }
-      } catch (error) {
-        console.error('Error loading session:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    initializeAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      setUser(session?.user ?? null)
     })
 
-    return () => {
-      subscription.unsubscribe()
-    }
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
   }, [supabase])
 
-  // Prevent hydration errors by only rendering children when mounted
-  if (!mounted) {
-    return null
-  }
-
   return (
-    <SupabaseContext.Provider value={{ supabase, user, session, loading }}>
+    <SupabaseContext.Provider value={{ supabase, session }}>
       {children}
     </SupabaseContext.Provider>
   )
@@ -74,7 +47,7 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
 
 export const useSupabase = () => {
   const context = useContext(SupabaseContext)
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useSupabase must be used within a SupabaseProvider')
   }
   return context

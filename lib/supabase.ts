@@ -1,40 +1,13 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-// Use dummy values during build time if env vars are missing
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+// Following the Supabase docs for the simplest implementation
+// https://supabase.com/docs/guides/auth/auth-helpers/nextjs
 
-// Get the correct site URL for auth redirects - critical for magic links
-const siteUrl = typeof window !== 'undefined' 
-  ? window.location.origin 
-  : (process.env.NEXT_PUBLIC_SITE_URL || 'https://event-planning-portal-1.vercel.app');
+export const supabase = createSupabaseClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
-console.log('Supabase client using site URL for redirects:', siteUrl);
-
-// Create a Supabase client with proper configuration
-// Note: we don't use the 'site' property since it's not supported in the current version
-// Instead, we explicitly set the redirect URL in each auth call
-const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
-  global: {
-    fetch: (url, options = {}) => {
-      return fetch(url, {
-        ...options,
-        headers: {
-          ...options.headers,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      })
-    }
-  },
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true
-  }
-});
-
-// For backwards compatibility
-export const createClient = () => supabase
 
 export async function sendVerificationCode(phone: string): Promise<{ error: string | null }> {
   try {

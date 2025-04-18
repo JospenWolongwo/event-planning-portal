@@ -33,26 +33,14 @@ export const useAuth = create<AuthState>()(
 
       signInWithEmail: async (email: string) => {
         try {
-          console.log('Signing in with email:', email)
-          
-          // Turn off PKCE flow completely for the magic link flow
-          // This should avoid the code verifier mismatch errors
-          console.log('Using default magic link flow with explicit redirect URL')
-          
-          // Always use production URL for consistent behavior
-          const productionUrl = 'https://event-planning-portal-1.vercel.app';
-          
+          // Using the exact implementation from Supabase docs
+          // Following https://supabase.com/docs/guides/auth/auth-helpers/nextjs
           const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
-              // Set explicit redirect URL
-              emailRedirectTo: `${productionUrl}/auth/callback`,
-              // Use default flow, not PKCE to avoid cookie issues
-              shouldCreateUser: true,
+              emailRedirectTo: `${window.location.origin}/auth/callback`
             }
           })
-          
-          console.log(`Magic link sent to ${email} with redirect to ${productionUrl}/auth/callback`)
 
           if (error) throw error
           console.log('Magic link sent successfully')
