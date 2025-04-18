@@ -37,10 +37,13 @@ export const SupabaseProvider = ({ children }: { children: React.ReactNode }) =>
         auth: {
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: true
+          flowType: 'pkce'
         },
         cookieOptions: {
-          path: '/'
+          path: '/',
+          sameSite: 'lax',
+          secure: true,
+          domain: typeof window !== 'undefined' ? window.location.hostname : undefined
         }
       }
     )

@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   
   // Debug info: log the full URL to help understand what's happening
-  console.log('Auth callback full URL:', request.url);
+  console.log('=== AUTH CALLBACK DEBUGGING INFO ===');
+  console.log('Full callback URL:', request.url);
+  console.log('All cookies present:', request.headers.get('cookie'));
 
   try {
     // Get the code from the URL
@@ -33,12 +35,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth?error=no_code', getSiteUrl()));
     }
 
-    // Get cookies and create a supabase server client
+    // Get cookies and create a supabase server client with explicit configuration
     const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
-    // Exchange the code for a session
-    // This is the critical step for PKCE flow
+    // Log all the cookies to debug the PKCE flow
+    console.log('Cookies in auth callback:', cookieStore.getAll().map(c => c.name));
+    
+    // Create a properly configured supabase client
+    const supabase = createRouteHandlerClient({ 
+      cookies: () => cookieStore,
+    });
+    
+    console.log('Starting code exchange with Supabase...');
+    
+    // Exchange the code for a session - this is the critical step for PKCE flow
+    // We need to make sure the code_verifier cookie is available here
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     
     if (exchangeError) {
