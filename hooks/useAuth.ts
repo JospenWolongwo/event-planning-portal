@@ -33,8 +33,16 @@ export const useAuth = create<AuthState>()(
       signInWithEmail: async (email: string) => {
         try {
           console.log('Signing in with email:', email)
+          
+          // Use the site URL from env vars with fallback for local development
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+          console.log('Using site URL for redirect:', siteUrl);
+          
           const { error } = await supabase.auth.signInWithOtp({
             email,
+            options: {
+              emailRedirectTo: `${siteUrl}/auth/callback`,
+            }
           })
 
           if (error) throw error

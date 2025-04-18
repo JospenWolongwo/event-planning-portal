@@ -24,6 +24,7 @@ export default function AuthPage() {
 function AuthContent() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState("");
   const [savedEmail, setSavedEmail] = useState<string | null>(null);
   // Simplified auth - no need for multiple test options
@@ -48,6 +49,7 @@ function AuthContent() {
 
   const handleContinue = async () => {
     setError("");
+    setMagicLinkSent(false);
 
     // Email authentication
     if (!email && !savedEmail) {
@@ -64,6 +66,9 @@ function AuthContent() {
 
       // Save email for future use
       localStorage.setItem("lastEmail", emailToUse);
+
+      // Set magic link sent state
+      setMagicLinkSent(true);
 
       toast({
         title: "Magic link sent!",
@@ -128,58 +133,96 @@ function AuthContent() {
           )}
 
           <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder=""
-                  className="pl-10"
-                  value={email || savedEmail || ""}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              {email === "jospenwolongwo@gmail.com" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Admin account detected - you&apos;ll be redirected to the admin dashboard after login
-                </p>
-              )}
-            </div>
-            
-            <div>
-              <Button
-                onClick={handleContinue}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Please wait...
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
+            {!magicLinkSent ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder=""
+                      className="pl-10"
+                      value={email || savedEmail || ""}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  {email === "jospenwolongwo@gmail.com" && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Admin account detected - you&apos;ll be redirected to the admin dashboard after login
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <Button
+                    onClick={handleContinue}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Please wait...
+                      </>
+                    ) : (
+                      <>
+                        Continue
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                </div>
 
-            <div className="text-center text-sm">
-              <p className="text-muted-foreground">
-                We&apos;ll send you a magic link to log in
-              </p>
-            </div>
+                <div className="text-center text-sm">
+                  <p className="text-muted-foreground">
+                    We&apos;ll send you a magic link to log in
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="bg-green-100 dark:bg-green-900/40 p-3 rounded-full">
+                    <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+                
+                <h3 className="text-center text-lg font-medium">Magic link sent!</h3>
+                
+                <p className="text-center text-sm text-muted-foreground">
+                  We&apos;ve sent a login link to <strong>{email || savedEmail}</strong>
+                </p>
+                
+                <div className="bg-card p-4 rounded border">
+                  <ol className="list-decimal list-inside space-y-2 text-sm">
+                    <li>Check your email inbox for the login link</li>
+                    <li>Click the link in your email (valid for 24 hours)</li>
+                    <li>You&apos;ll be automatically signed in to your account</li>
+                  </ol>
+                </div>
+                
+                <div>
+                  <Button
+                    onClick={handleContinue}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Send another link
+                  </Button>
+                </div>
+              </div>
+            )}
             
-            <div className="text-center text-sm mt-4">
-              <p className="text-muted-foreground">
-                Enter your email above and click Continue to sign in
-              </p>
-            </div>
+            {!magicLinkSent && (
+              <div className="text-center text-sm mt-4">
+                <p className="text-muted-foreground">
+                  Enter your email above and click Continue to sign in
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
