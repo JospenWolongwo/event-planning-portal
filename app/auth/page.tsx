@@ -52,7 +52,25 @@ function AuthContent() {
     
     if (error) {
       console.error("Auth error:", error, errorDescription);
-      setError(errorDescription || "Authentication failed. Please try again.");
+      
+      if (error === 'access_denied' && errorDescription?.includes('expired')) {
+        // Handle expired link error specifically
+        setError("The magic link has expired. Please request a new one.");
+      } else if (error === 'session_error') {
+        // Handle session errors like PKCE issues
+        setError("Authentication error. Please try again with a new magic link.");
+      } else if (error === 'no_code') {
+        // Handle missing code parameter
+        setError("Invalid authentication link. Please request a new one.");
+      } else {
+        // Handle generic errors
+        setError(errorDescription || "Authentication failed. Please try again.");
+      }
+      
+      // Automatically scroll to error message
+      setTimeout(() => {
+        document.querySelector('.destructive')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }
   }, [searchParams]);
 
