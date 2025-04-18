@@ -1,10 +1,12 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Use dummy values during build time if env vars are missing
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-// Create Supabase client with proper headers to avoid 406 errors
-export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+// Create a Supabase client with fallback values
+// During build time, this will use dummy values but won't actually make API calls
+const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
   global: {
     fetch: (url, options = {}) => {
       return fetch(url, {
@@ -21,7 +23,7 @@ export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
   }
-})
+});
 
 // For backwards compatibility
 export const createClient = () => supabase
@@ -39,7 +41,7 @@ export async function sendVerificationCode(phone: string): Promise<{ error: stri
     console.log(`Verification code for ${phone} created with ID: ${data}`)
     
     return { error: null }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending verification code:', error)
     return { error: 'Failed to send verification code' }
   }
@@ -60,9 +62,9 @@ export async function verifyCode(phone: string, code: string): Promise<{
 
     return { 
       error: null,
-      verified: data 
+      verified: Boolean(data) 
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verifying code:', error)
     return { 
       error: 'Failed to verify code',

@@ -1,3 +1,6 @@
+// Import to force dynamic rendering, not static generation
+import { dynamic, revalidate } from '../no-store'
+
 export default function TermsPage() {
   return (
     <div className="container py-16">

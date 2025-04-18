@@ -1,5 +1,7 @@
 'use client'
 
+// Import to force dynamic rendering, not static generation
+import { dynamic, revalidate } from '../no-store'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useSupabase } from '@/providers/SupabaseProvider'
