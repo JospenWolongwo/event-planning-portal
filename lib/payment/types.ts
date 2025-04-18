@@ -3,7 +3,8 @@ export type PaymentProviderType = 'mtn' | 'orange';
 export type PaymentStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
 
 export interface PaymentRequest {
-  bookingId: string;
+  bookingId?: string;           // Original field for backward compatibility
+  registrationId?: string;      // New field for event registrations
   amount: number;
   provider: PaymentProviderType;
   phoneNumber: string;

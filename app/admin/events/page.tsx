@@ -15,8 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { EventForm } from './event-form'
-import { isAdmin as checkIsAdmin } from '@/lib/utils/admin'
-import { isAdminBypassActive, getAdminTestUser } from '@/lib/admin-bypass'
+// All authenticated users can access admin features in our simplified approach
 
 export default function AdminEventsPage() {
   const { supabase, user } = useSupabase()
@@ -36,34 +35,19 @@ export default function AdminEventsPage() {
   // Initialize the EventService
   const eventService = new EventService(supabase)
 
-  // Check if user is admin
+  // Check if user is authenticated - all authenticated users can access admin features
   useEffect(() => {
-    const checkAdmin = async () => {
-      // First check for admin bypass - this is the simplest and most direct check
-      if (isAdminBypassActive()) {
-        console.log('Admin bypass active in events page, granting access')
-        setIsAdmin(true)
-        loadEvents()
-        return
-      }
-
+    const checkAuthentication = async () => {
       if (!user) {
         router.push('/auth?redirectTo=/admin/events')
         return
       }
 
-      // Check if user is admin using our utility function
-      if (!checkIsAdmin(user)) {
-        toast.error('You do not have permission to access this page')
-        router.push('/')
-        return
-      }
-
+      // User is authenticated, allow access
       setIsAdmin(true)
-      loadEvents()
     }
 
-    checkAdmin()
+    checkAuthentication()
   }, [user, router])
 
   const loadEvents = async () => {
@@ -107,12 +91,9 @@ export default function AdminEventsPage() {
 
   const handleCreateEvent = async (eventData: Partial<Event>) => {
     try {
-      // Make sure we have a valid organizer_id, even when using admin bypass
-      if (!eventData.organizer_id) {
-        const testUser = getAdminTestUser();
-        if (testUser) {
-          eventData.organizer_id = testUser.id;
-        }
+      // Make sure we have a valid organizer_id
+      if (!eventData.organizer_id && user) {
+        eventData.organizer_id = user.id;
       }
 
       const { data, error } = await eventService.createEvent(eventData)

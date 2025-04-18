@@ -371,7 +371,7 @@ export function RegistrationModal({ isOpen, onClose, event, onRegistrationComple
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {step === 1 ? 'Register for Event' : 
@@ -379,7 +379,9 @@ export function RegistrationModal({ isOpen, onClose, event, onRegistrationComple
              'Registration Complete'}
           </DialogTitle>
         </DialogHeader>
-        {renderStep()}
+        <div className="overflow-y-auto max-h-[70vh] pr-1">
+          {renderStep()}
+        </div>
       </DialogContent>
     </Dialog>
   )

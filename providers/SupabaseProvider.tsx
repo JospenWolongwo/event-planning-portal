@@ -6,12 +6,28 @@ import { createBrowserClient } from '@supabase/ssr'
 const SupabaseContext = createContext<any>(null)
 
 export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
-  const [supabase] = useState(() =>
-    createBrowserClient(
+  const [supabase] = useState(() => {
+    // Create browser client with headers to fix 406 errors
+    const client = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          fetch: (url, options = {}) => {
+            return fetch(url, {
+              ...options,
+              headers: {
+                ...options.headers,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              }
+            })
+          }
+        }
+      }
     )
-  )
+    return client
+  })
 
   const [user, setUser] = useState<any>(null)
   const [session, setSession] = useState<any>(null)

@@ -48,26 +48,32 @@ export class PaymentService {
   }
 
   private async createPaymentRecord(data: {
-    bookingId: string;
+    bookingId: string | undefined;
     amount: number;
     provider: string;
     phoneNumber: string;
     transactionId?: string;
+    isRegistration?: boolean;  // This should always be true in your system
   }) {
     try {
       console.log('Creating payment record with data:', data);
       
+      // Create the insert data object
+      const insertData: any = {
+        amount: data.amount,
+        provider: data.provider,
+        phone_number: data.phoneNumber,
+        transaction_id: data.transactionId,
+        status: 'pending',
+        currency: 'XAF',
+        registration_id: data.bookingId  // Always store as registration_id
+      };
+      
+      console.log('📝 Creating payment record for registration:', data.bookingId);
+      
       const { data: payment, error } = await this.supabase
         .from('payments')
-        .insert({
-          booking_id: data.bookingId,
-          amount: data.amount,
-          provider: data.provider,
-          phone_number: data.phoneNumber,
-          transaction_id: data.transactionId,
-          status: 'pending',
-          currency: 'XAF'
-        })
+        .insert(insertData)
         .select('*')
         .single();
 
@@ -95,30 +101,27 @@ export class PaymentService {
         throw new Error('Invalid phone number');
       }
 
-      // Check if the booking exists and is verified
-      const { data: booking, error: bookingError } = await this.supabase
-        .from('bookings')
-        .select('id, code_verified, verification_code')
-        .eq('id', request.bookingId)
+      // Check if the registration exists
+      const { data: registration, error: registrationError } = await this.supabase
+        .from('event_registrations')
+        .select('id, status')
+        .eq('id', request.registrationId)
         .single();
-
-      if (bookingError) {
-        console.error('❌ Error fetching booking:', bookingError);
-        throw new Error('Booking not found');
+        
+      if (registrationError) {
+        console.error('❌ Error checking registration:', registrationError);
+        throw new Error('Registration not found or invalid');
       }
-
-      // Check if the verification code has been validated
-      if (!booking.code_verified && booking.verification_code) {
-        console.error('❌ Booking verification required:', request.bookingId);
-        throw new Error('Booking verification required before payment can be processed');
-      }
+      
+      console.log('✅ Registration found:', registration);
 
       // Create payment record first
       const payment = await this.createPaymentRecord({
-        bookingId: request.bookingId,
+        bookingId: request.registrationId || request.bookingId,
         amount: request.amount,
         provider: request.provider,
-        phoneNumber: formattedPhone
+        phoneNumber: formattedPhone,
+        isRegistration: !!request.registrationId  // Flag this as a registration payment if registrationId exists
       });
 
       console.log('💳 Created payment record:', payment);
@@ -140,7 +143,7 @@ export class PaymentService {
       };
     }
   }
-
+  
   private async handleMTNPayment(
     payment: Payment,
     formattedPhone: string,
@@ -712,46 +715,114 @@ export class PaymentService {
         }).catch(err => console.error('❌ SMS sending error:', err));
       }
 
-      // Update booking status if payment is completed
+      // Update booking or registration status if payment is completed
       if (newStatus === 'completed') {
-        // Generate verification code and update booking simultaneously
-        const [bookingUpdate, verificationCode] = await Promise.all([
-          // Update booking status
-          this.supabase
-            .from('bookings')
-            .update({
-              payment_status: 'completed',
-              status: 'pending_verification' // Changed from 'confirmed' to 'pending_verification'
-            })
-            .eq('id', payment.bookingId),
+        try {
+          // First, check if this is an event registration by looking up the ID in event_registrations
+          const { data: registration, error: regCheckError } = await this.supabase
+            .from('event_registrations')
+            .select('id')
+            .eq('id', payment.bookingId)
+            .maybeSingle();
             
-          // Generate verification code
-          this.generateVerificationCode(payment.bookingId)
-        ]);
+          // If we found a match in event_registrations, update it
+          if (registration) {
+            console.log('✅ Updating event registration payment status:', payment.bookingId);
+            const { error: regUpdateError } = await this.supabase
+              .from('event_registrations')
+              .update({
+                payment_status: 'completed',
+                status: 'confirmed'
+              })
+              .eq('id', payment.bookingId);
+              
+            if (regUpdateError) {
+              console.error('❌ Error updating event registration:', regUpdateError);
+              throw regUpdateError;
+            }
+            
+            console.log('✅ Event registration payment completed successfully');
+          } 
+          // Otherwise, assume it's a booking from the old system
+          else {
+            console.log('✅ Updating booking payment status:', payment.bookingId);
+            // Generate verification code and update booking simultaneously
+            const [bookingUpdate, verificationCode] = await Promise.all([
+              // Update booking status
+              this.supabase
+                .from('bookings')
+                .update({
+                  payment_status: 'completed',
+                  status: 'pending_verification' // Changed from 'confirmed' to 'pending_verification'
+                })
+                .eq('id', payment.bookingId),
+                
+              // Generate verification code
+              this.generateVerificationCode(payment.bookingId)
+            ]);
 
-        if (bookingUpdate.error) {
-          console.error('❌ Error updating booking:', bookingUpdate.error);
-          throw bookingUpdate.error;
+            if (bookingUpdate.error) {
+              console.error('❌ Error updating booking:', bookingUpdate.error);
+              throw bookingUpdate.error;
+            }
+            
+            if (verificationCode.error) {
+              console.error('❌ Error generating verification code:', verificationCode.error);
+              // Don't throw - verification code is not critical for booking confirmation
+            } else {
+              console.log('✅ Generated verification code for booking:', payment.bookingId);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error handling payment completion:', error);
+          throw error;
         }
-        
-        if (verificationCode.error) {
-          console.error('❌ Error generating verification code:', verificationCode.error);
-          // Don't throw - verification code is not critical for booking confirmation
-        } else {
-          console.log('✅ Generated verification code for booking:', payment.bookingId);
-        }
-      } else if (newStatus === 'failed') {
-        const { error: bookingError } = await this.supabase
-          .from('bookings')
-          .update({
-            payment_status: 'failed',
-            status: 'cancelled'
-          })
-          .eq('id', payment.bookingId);
+      } 
+      // Handle failed payments
+      else if (newStatus === 'failed') {
+        try {
+          // First, check if this is an event registration
+          const { data: registration, error: regCheckError } = await this.supabase
+            .from('event_registrations')
+            .select('id')
+            .eq('id', payment.bookingId)
+            .maybeSingle();
+            
+          // If we found a match in event_registrations, update it
+          if (registration) {
+            console.log('✅ Updating failed event registration payment status:', payment.bookingId);
+            const { error: regUpdateError } = await this.supabase
+              .from('event_registrations')
+              .update({
+                payment_status: 'failed',
+                status: 'cancelled'
+              })
+              .eq('id', payment.bookingId);
+              
+            if (regUpdateError) {
+              console.error('❌ Error updating failed event registration:', regUpdateError);
+              throw regUpdateError;
+            }
+          } 
+          // Otherwise, assume it's a booking from the old system
+          else {
+            console.log('✅ Updating failed booking payment status:', payment.bookingId);
+            const { error: bookingError } = await this.supabase
+              .from('bookings')
+              .update({
+                payment_status: 'failed',
+                status: 'cancelled'
+              })
+              .eq('id', payment.bookingId);
 
-        if (bookingError) {
-          console.error('❌ Error updating booking:', bookingError);
-          throw bookingError;
+            if (bookingError) {
+              console.error('❌ Error updating booking:', bookingError);
+              throw bookingError;
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error handling payment failure:', error);
+          throw error;
         }
       }
 

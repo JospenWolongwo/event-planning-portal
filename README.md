@@ -118,25 +118,44 @@ This simplified access model is specifically for this testing/demo version to al
 
 ## Payment Testing
 
-The application supports multiple payment methods for testing:
+The application integrates a fully functional payment system for event registrations.
 
-### Credit Card Testing
+### Testing the Payment System
 
-Use the following test card details:
-- **Card Number**: 4242 4242 4242 4242
-- **Expiry Date**: Any future date (e.g., 12/25)
-- **CVC**: Any 3 digits (e.g., 123)
-- **Name**: Any name
+1. **Register for an Event**
+   - Browse to any event and click the 'Register Now' button
+   - If not logged in, you'll be redirected to login first
+   - Select the number of attendees
+   - Click 'Continue to Payment'
 
-### Mobile Money Testing
+2. **Choose Payment Method**
+   - Select between MTN Mobile Money and Orange Money
+   - Enter a valid phone number in the format shown below
+   - Click 'Pay Now'
 
-For MTN Mobile Money testing:
-- **Phone Number**: +237 650000000
-- **OTP Code**: 123456
+3. **Complete Payment**
+   - The payment will be processed in test mode
+   - No actual charges will be made
+   - You'll receive a confirmation message when payment is successful
 
-For Orange Money testing:
-- **Phone Number**: +237 690000000
-- **OTP Code**: 123456
+### Mobile Money Test Numbers
+
+For **MTN Mobile Money** testing:
+- **Phone Number Format**: +237 65XXXXXXX (e.g., +237 650123456)
+- All payments will automatically succeed in test mode
+- No actual OTP verification is required
+
+For **Orange Money** testing:
+- **Phone Number Format**: +237 69XXXXXXX (e.g., +237 690123456)
+- All payments will automatically succeed in test mode
+- No actual validation is performed
+
+### Payment Receipt
+
+After successful payment, you will:
+- Receive a confirmation page
+- Be able to view your event registration in your account
+- See the registered event in your 'My Events' section
 
 ## Event Media Handling
 

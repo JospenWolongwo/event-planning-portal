@@ -58,7 +58,7 @@ export class RegistrationService {
     try {
       // Build count query for pagination
       let countQuery = this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .select('id', { count: 'exact' })
         .eq('user_id', userId)
 
@@ -77,12 +77,12 @@ export class RegistrationService {
 
       // Build data query
       let query = this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .select(`
           *,
-          ride:rides(*), 
+          event:events(*), 
           user:profiles(*)
-        `) // Will be 'event:events(*)' after migration
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
@@ -125,9 +125,9 @@ export class RegistrationService {
     try {
       // Build count query for pagination
       let countQuery = this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .select('id', { count: 'exact' })
-        .eq('ride_id', eventId) // Will be 'event_id' after migration
+        .eq('event_id', eventId)
 
       // Apply filters to count query
       if (filters) {
@@ -144,12 +144,13 @@ export class RegistrationService {
 
       // Build data query
       let query = this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .select(`
           *,
+          event:events(*), 
           user:profiles(id, full_name, phone, avatar_url)
         `)
-        .eq('ride_id', eventId) // Will be 'event_id' after migration
+        .eq('event_id', eventId)
         .order('created_at', { ascending: false })
 
       // Apply filters
@@ -186,12 +187,12 @@ export class RegistrationService {
   async getRegistrationById(registrationId: string): Promise<{ data: Registration | null; error: Error | null }> {
     try {
       const { data, error } = await this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .select(`
           *,
-          ride:rides(*),
+          event:events(*),
           user:profiles(id, full_name, phone, avatar_url)
-        `) // Will be 'event:events(*)' after migration
+        `)
         .eq('id', registrationId)
         .single()
 
@@ -214,11 +215,11 @@ export class RegistrationService {
   }): Promise<{ data: Registration | null; error: Error | null }> {
     try {
       const { data, error } = await this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .insert([{
-          ride_id: registrationData.event_id, // Will be 'event_id'
+          event_id: registrationData.event_id,
           user_id: registrationData.user_id,
-          seats: registrationData.attendees, // Will be 'attendees'
+          attendees: registrationData.attendees,
           status: 'pending',
           payment_status: 'pending'
         }])
@@ -257,7 +258,7 @@ export class RegistrationService {
       }
 
       const { data, error } = await this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .update(updates)
         .eq('id', registrationId)
         .select()
@@ -278,7 +279,7 @@ export class RegistrationService {
   async cancelRegistration(registrationId: string): Promise<{ success: boolean; error: Error | null }> {
     try {
       const { error } = await this.supabase
-        .from('bookings') // Will be 'event_registrations' after migration
+        .from('event_registrations')
         .update({
           status: 'cancelled',
           updated_at: new Date().toISOString()
