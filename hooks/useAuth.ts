@@ -35,18 +35,13 @@ export const useAuth = create<AuthState>()(
         try {
           console.log('Signing in with email:', email)
           
-          // Use window.location.origin to ALWAYS get the current site URL
-          // This is critical for magic links to work correctly
-          const currentUrl = window.location.origin;
-          const deployedUrl = 'https://event-planning-portal-1.vercel.app';
+          // ALWAYS use the production URL for the magic link
+          // This is the only reliable way to make sure the links work properly
+          const productionUrl = 'https://event-planning-portal-1.vercel.app';
+          console.log('FORCE using production URL for magic link:', productionUrl);
           
-          // Determine which URL to use - prioritize deployed URL if we detect we're on it
-          const useUrl = currentUrl.includes('vercel.app') ? currentUrl : deployedUrl;
-          console.log('Current browser URL:', currentUrl);
-          console.log('Using redirect URL:', useUrl);
-          
-          // Construct the complete redirect URL
-          const redirectTo = `${useUrl}/auth/callback`;
+          // Construct the complete redirect URL with production URL only
+          const redirectTo = `${productionUrl}/auth/callback`;
           console.log('Complete email redirect URL:', redirectTo);
           
           // Force Supabase to use our explicit redirect URL
