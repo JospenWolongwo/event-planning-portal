@@ -1,6 +1,10 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getSiteUrl } from '@/lib/auth.config'
+
+// Force dynamic route handler to avoid static rendering issues
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -39,9 +43,15 @@ export async function GET(request: NextRequest) {
       
       console.log('Successfully exchanged code for session')
       
-      // Redirect to home page or requested redirect location
-      const redirectTo = requestUrl.searchParams.get('redirectTo') || '/'
-      return NextResponse.redirect(new URL(redirectTo, requestUrl.origin))
+      // If code is present, redirect to home page or requested redirect location
+      let redirectTo = requestUrl.searchParams.get('redirectTo') || '/'
+      
+      // Use the consistent site URL from auth.config
+      // This ensures we never use localhost in production
+      const siteUrl = getSiteUrl();
+      console.log('Redirecting to site URL:', siteUrl);
+      
+      return NextResponse.redirect(new URL(redirectTo, siteUrl))
     } catch (err) {
       console.error('Unexpected error in auth callback:', err)
       return NextResponse.redirect(new URL('/auth?error=unexpected', requestUrl.origin))

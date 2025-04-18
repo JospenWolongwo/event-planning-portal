@@ -5,6 +5,7 @@ import { persist } from 'zustand/middleware'
 import { createBrowserClient } from '@supabase/ssr'
 import { isAdmin } from '@/lib/utils/admin'
 import { TEST_CREDENTIALS, createTestSession, isTestAdmin } from '@/lib/test-auth'
+import { getRedirectUrl } from '@/lib/auth.config'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,8 +39,8 @@ export const useAuth = create<AuthState>()(
           const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
           console.log('Using site URL for redirect:', siteUrl);
           
-          // Create email redirect URL
-          const redirectTo = new URL('/auth/callback', siteUrl).toString();
+          // Use the auth.config helper to get a consistent redirect URL
+          const redirectTo = getRedirectUrl('/auth/callback');
           console.log('Email redirect URL:', redirectTo);
           
           const { error } = await supabase.auth.signInWithOtp({

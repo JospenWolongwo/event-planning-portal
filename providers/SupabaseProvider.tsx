@@ -7,9 +7,16 @@ const SupabaseContext = createContext<any>(null)
 
 export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [supabase] = useState(() => {
-    // Create browser client with headers to fix 406 errors
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-    console.log('Using site URL:', siteUrl);
+    // Force use of the browser's current URL in client components
+    // This ensures we always use the correct origin for auth redirects
+    const currentUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || currentUrl;
+    
+    if (typeof window !== 'undefined') {
+      console.log('Current browser URL:', window.location.origin);
+      console.log('Environment site URL:', process.env.NEXT_PUBLIC_SITE_URL);
+      console.log('Final site URL being used:', siteUrl);
+    }
     
     const client = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
