@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSupabase } from "@/providers/SupabaseProvider"
 import { Button } from "@/components/ui/button"
@@ -42,32 +42,13 @@ export default function AdminOrganizersPage() {
   const [activeTab, setActiveTab] = useState("all")
 
   useEffect(() => {
-    checkAdminAccess()
+    // Skip admin checks - all authenticated users can access
     loadOrganizers()
-  }, [])
+  }, [loadOrganizers])
 
-  const checkAdminAccess = async () => {
-    
-    if (!user) {
-      router.push('/auth?redirectTo=/admin/organizers')
-      return
-    }
-    
-    // Check if user is admin using our utility function
-    if (isAdmin(user)) {
-      return
-    }
-    
-    // If not admin, redirect to home
-    router.push('/')
-    toast({
-      title: "Access Denied",
-      description: "You don't have permission to access this page",
-      variant: "destructive"
-    })
-  }
+  // Admin access check removed - all authenticated users can access
 
-  const loadOrganizers = async () => {
+  const loadOrganizers = useCallback(async () => {
     setLoading(true)
     try {
       // Get all admin users
@@ -115,7 +96,7 @@ export default function AdminOrganizersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
 
   const handlePromoteToOrganizer = async (userId: string) => {
     try {

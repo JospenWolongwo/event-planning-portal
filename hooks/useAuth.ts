@@ -3,168 +3,183 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createBrowserClient } from '@supabase/ssr'
-import { isAdmin } from '@/lib/utils/admin'
-import { TEST_CREDENTIALS, createTestSession, isTestAdmin } from '@/lib/test-auth'
-import { getRedirectUrl } from '@/lib/auth.config'
 
+// Create a single Supabase client
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Define types
 interface AuthState {
   user: any
   session: any
-  signInWithEmail: (email: string) => Promise<{ error: string | null }>
-  signInWithCredentials: (email: string, password: string) => Promise<{ error: string | null; data: any }>
-  testSignIn: (role: 'admin' | 'user') => Promise<void>
+  signInWithOtp: (phoneNumber: string) => Promise<{ error: string | null; data: any }>
+  verifyOtp: (phoneNumber: string, otp: string) => Promise<{ error: string | null; data: any }>
   signOut: () => Promise<void>
   getSession: () => Promise<void>
 }
 
-// Define the return type for signInWithCredentials
-type SignInResult = Promise<{ error: string | null; data: any }>;
+type AuthResult = Promise<{ error: string | null; data: any }>;
 
+// Create auth store
 export const useAuth = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       session: null,
 
-      signInWithEmail: async (email: string) => {
+      // Sign in with OTP
+      signInWithOtp: async (phoneNumber: string): AuthResult => {
         try {
-          // Using the exact implementation from Supabase docs
-          // Following https://supabase.com/docs/guides/auth/auth-helpers/nextjs
-          const { error } = await supabase.auth.signInWithOtp({
-            email,
+          console.log('Requesting OTP for:', phoneNumber)
+          
+          // Format phone number if needed
+          let formattedPhone = phoneNumber;
+          if (!phoneNumber.startsWith('+')) {
+            formattedPhone = `+${phoneNumber}`;
+          }
+
+          const { data, error } = await supabase.auth.signInWithOtp({
+            phone: formattedPhone,
             options: {
-              emailRedirectTo: `${window.location.origin}/auth/callback`
+              shouldCreateUser: true
             }
           })
 
           if (error) throw error
-          console.log('Magic link sent successfully')
-          return { error: null }
-        } catch (error: any) {
-          console.error('Email sign in error:', error)
-          return { error: error.message }
-        }
-      },
 
-      signInWithCredentials: async (email: string, password: string): SignInResult => {
-        try {
-          console.log('Signing in with credentials:', email)
+          console.log('OTP sent successfully to:', formattedPhone)
           
-          // Check for test credentials
-          if (email === TEST_CREDENTIALS.ADMIN.email && password === TEST_CREDENTIALS.ADMIN.password) {
-            await get().testSignIn('admin');
-            return { error: null, data: { user: TEST_CREDENTIALS.ADMIN } };
-          }
-          
-          if (email === TEST_CREDENTIALS.USER.email && password === TEST_CREDENTIALS.USER.password) {
-            await get().testSignIn('user');
-            return { error: null, data: { user: TEST_CREDENTIALS.USER } };
-          }
-          
-          // Regular authentication
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          })
-
-          if (error) throw error
-
-          console.log('Credential login successful:', data)
-          set({ user: data.user, session: data.session })
           return { error: null, data }
         } catch (error: any) {
-          console.error('Credential login error:', error)
+          console.error('OTP request error:', error)
           return { error: error.message, data: null }
         }
       },
 
-      testSignIn: async (role: 'admin' | 'user') => {
+      // Verify OTP code
+      verifyOtp: async (phoneNumber: string, otp: string): AuthResult => {
         try {
-          // Create a test session with the appropriate role
-          const testSession = createTestSession(role);
-          
-          // Set the user and session in the store
-          set({ 
-            user: testSession.user,
-            session: testSession
-          });
-          
-          // Store in localStorage for persistence
-          localStorage.setItem('test-session', JSON.stringify(testSession));
-          
-          console.log(`Test sign-in successful as ${role}`);
-          
-          // Mock the Supabase auth state change
-          window.dispatchEvent(new CustomEvent('supabase.auth.event', { 
-            detail: { 
-              event: 'SIGNED_IN', 
-              session: testSession 
-            } 
-          }));
-          
-          // Directly redirect based on role
-          if (role === 'admin') {
-            window.location.href = '/admin/dashboard';
-          } else {
-            window.location.href = '/';
+          console.log('Verifying OTP for:', phoneNumber)
+
+          // Format phone number if needed
+          let formattedPhone = phoneNumber;
+          if (!phoneNumber.startsWith('+')) {
+            formattedPhone = `+${phoneNumber}`;
           }
           
-          return Promise.resolve();
-        } catch (error) {
-          console.error('Test sign-in error:', error);
-          return Promise.reject(error);
-        }
-      },
+          const { data, error } = await supabase.auth.verifyOtp({
+            phone: formattedPhone,
+            token: otp,
+            type: 'sms'
+          })
 
-      signOut: async () => {
-        // Clear test session if exists
-        localStorage.removeItem('test-session');
-        
-        // Also sign out from Supabase
-        await supabase.auth.signOut();
-        
-        // Reset user state
-        set({ user: null, session: null });
-      },
+          if (error) throw error
 
-      getSession: async () => {
-        try {
-          // First check for a test session
-          const testSessionJson = localStorage.getItem('test-session');
-          if (testSessionJson) {
-            try {
-              const testSession = JSON.parse(testSessionJson);
-              set({ user: testSession.user, session: testSession });
-              console.log('Loaded test session:', testSession.user?.email);
-              return;
-            } catch (e) {
-              console.error('Error parsing test session:', e);
-              localStorage.removeItem('test-session');
+          console.log('OTP verification successful, user:', data.user?.id)
+          set({ user: data.user, session: data.session })
+          
+          // Store auth data for persistence
+          if (typeof window !== 'undefined') {
+            // Find and extend the Supabase auth token
+            const supabaseItemKeys = Object.keys(localStorage).filter(key => 
+              key.startsWith('sb-') && key.includes('-auth-token')
+            );
+            
+            if (supabaseItemKeys.length > 0) {
+              const primaryKey = supabaseItemKeys[0];
+              const authData = localStorage.getItem(primaryKey);
+              
+              if (authData) {
+                console.log('Found auth token, ensuring persistence');
+                localStorage.setItem('event-portal-auth-backup', authData);
+              }
             }
           }
           
-          // Otherwise check for a real session
+          return { error: null, data }
+        } catch (error: any) {
+          console.error('OTP verification error:', error)
+          return { error: error.message, data: null }
+        }
+      },
+
+      // Sign out
+      signOut: async () => {        
+        await supabase.auth.signOut();
+        set({ user: null, session: null });
+      },
+
+      // Get current session
+      getSession: async () => {
+        try {
+          // Try to recover session from backup if needed
+          let recovered = false;
+          if (typeof window !== 'undefined') {
+            const backupAuth = localStorage.getItem('event-portal-auth-backup');
+            
+            if (backupAuth) {
+              // Find the Supabase auth token key
+              const supabaseItemKeys = Object.keys(localStorage).filter(key => 
+                key.startsWith('sb-') && key.includes('-auth-token')
+              );
+              
+              if (supabaseItemKeys.length === 0) {
+                // The token is missing, try to restore it
+                const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+                if (supabaseUrl) {
+                  // Extract project reference from URL
+                  const projectRef = supabaseUrl.split('//')[1]?.split('.')[0];
+                  if (projectRef) {
+                    const tokenKey = `sb-${projectRef}-auth-token`;
+                    localStorage.setItem(tokenKey, backupAuth);
+                    console.log('Auth session restored from backup');
+                    recovered = true;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Get the current session from Supabase
           const { data } = await supabase.auth.getSession();
+          
           if (data?.session?.user) {
             set({ user: data.session.user, session: data.session });
-            console.log('Loaded Supabase session:', data.session.user.email);
+            console.log('Session loaded for:', data.session.user.email);
             
-            // Dispatch event to notify other components
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('auth-state-changed', { 
                 detail: { user: data.session.user, session: data.session }
               }));
+              
+              // If we have a session, ensure we back it up
+              const supabaseItemKeys = Object.keys(localStorage).filter(key => 
+                key.startsWith('sb-') && key.includes('-auth-token')
+              );
+              
+              if (supabaseItemKeys.length > 0) {
+                const primaryKey = supabaseItemKeys[0];
+                const authData = localStorage.getItem(primaryKey);
+                if (authData) {
+                  localStorage.setItem('event-portal-auth-backup', authData);
+                }
+              }
+            }
+          } else if (recovered) {
+            // If we recovered the session but still don't have data,
+            // force a page reload to reinitialize auth
+            if (typeof window !== 'undefined') {
+              window.location.reload();
             }
           } else {
             console.log('No session found');
+            set({ user: null, session: null });
           }
         } catch (error) {
-          console.error('Error getting session:', error);
+          console.error('Session error:', error);
+          set({ user: null, session: null });
         }
       }
     }),
@@ -175,54 +190,29 @@ export const useAuth = create<AuthState>()(
   )
 );
 
-// Initialize session on app load
+// Initialize auth state on client-side only
 if (typeof window !== 'undefined') {
   setTimeout(() => {
     useAuth.getState().getSession();
   }, 0);
   
-  // Set up auth state change listener with improved synchronization
+  // Listen for auth state changes
   supabase.auth.onAuthStateChange((event, session) => {
-    console.log('Auth state changed:', event, session);
+    console.log('Auth state changed:', event, session?.user?.id || null);
+    
     if (session?.user) {
+      // User signed in
       useAuth.setState({ user: session.user, session: session });
       
-      // Dispatch a custom event to ensure all components are updated
       window.dispatchEvent(new CustomEvent('auth-state-changed', { 
         detail: { user: session.user, session: session }
       }));
-      
-      // Redirect admin users to dashboard
-      if (isAdmin(session.user)) {
-        // Use a small delay to ensure the state is updated
-        setTimeout(() => {
-          if (window.location.pathname === '/auth') {
-            window.location.href = '/admin/dashboard';
-          }
-        }, 500);
-      }
     } else {
-      // Don't clear test users on auth state change
-      const testSessionJson = localStorage.getItem('test-session');
-      if (!testSessionJson) {
-        useAuth.setState({ user: null, session: null });
-        // Also dispatch event for logout
-        window.dispatchEvent(new CustomEvent('auth-state-changed', { 
-          detail: { user: null, session: null }
-        }));
-      }
-    }
-  });
-  
-  // Listen for custom auth events
-  window.addEventListener('supabase.auth.event', (e: any) => {
-    if (e.detail?.event === 'SIGNED_IN' && e.detail?.session) {
-      const session = e.detail.session;
-      useAuth.setState({ user: session.user, session: session });
+      // User signed out
+      useAuth.setState({ user: null, session: null });
       
-      // Also dispatch our custom event
       window.dispatchEvent(new CustomEvent('auth-state-changed', { 
-        detail: { user: session.user, session: session }
+        detail: { user: null, session: null }
       }));
     }
   });

@@ -48,45 +48,13 @@ export default function AdminDriversPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    checkAdminAccess()
+    // Skip admin checks - all authenticated users can access
     loadApplications()
-  }, [])
+  }, [loadApplications])
 
-  const checkAdminAccess = async () => {
-    try {
-      
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) {
-        router.push("/auth?redirectTo=/admin/drivers")
-        return
-      }
+  // Admin access check removed - all authenticated users can access
 
-      // Check if user is admin using our utility function
-      if (isAdmin(currentUser)) {
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", currentUser.id)
-        .single()
-
-      if (profile?.role !== "admin") {
-        router.push("/")
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error checking admin access:", error)
-      router.push("/")
-    }
-  }
-
-  const loadApplications = async () => {
+  const loadApplications = React.useCallback(async () => {
     try {
       setLoading(true)
       const { data: profiles, error: profilesError } = await supabase
@@ -149,7 +117,7 @@ export default function AdminDriversPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
 
   const updateDriverStatus = async (driverId: string, status: string) => {
     try {

@@ -22,19 +22,10 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
-    const checkAdmin = async () => {
-
-      if (!user) {
-        router.push('/auth?redirectTo=/admin/dashboard')
-        return
-      }
-
-      // Check if user is admin
-      if (!isAdmin(user)) {
-        router.push('/')
-        return
-      }
-
+    const loadDashboardData = async () => {
+      // No auth checks - immediately load data for any user
+      console.log('Loading admin dashboard data')
+      
       // Fetch dashboard stats
       try {
         const [eventsResponse, activeEventsResponse, usersResponse, registrationsResponse] = await Promise.all([
@@ -57,8 +48,8 @@ export default function AdminDashboard() {
       }
     }
 
-    checkAdmin()
-  }, [supabase, user, router])
+    loadDashboardData()
+  }, [supabase])
 
   if (loading) {
     return (
@@ -221,8 +212,8 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Email</p>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  <p className="text-sm font-medium">User ID</p>
+                  <p className="text-sm text-muted-foreground">{user?.id}</p>
                 </div>
                 <div className="space-y-1 mt-4">
                   <p className="text-sm font-medium">Role</p>

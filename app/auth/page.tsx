@@ -7,32 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, Mail } from "lucide-react";
+import { ArrowRight, Loader2, Phone } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BsCalendarEvent } from "react-icons/bs";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AuthPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [needsVerification, setNeedsVerification] = useState(false);
-  const [savedEmail, setSavedEmail] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [savedPhone, setSavedPhone] = useState<string | null>(null);
   
-  // Create Supabase client directly
-  const supabase = createClientComponentClient();
+  // Use the auth hook instead of direct Supabase client
+  const { signInWithOtp, verifyOtp } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Check for email in localStorage
-    const lastEmail = localStorage.getItem('lastEmail');
-    if (lastEmail) {
-      setSavedEmail(lastEmail);
-      setEmail(lastEmail);
+    // Check for phone in localStorage
+    const lastPhone = localStorage.getItem('lastPhone');
+    if (lastPhone) {
+      setSavedPhone(lastPhone);
+      setPhoneNumber(lastPhone);
     }
 
     // Get error info from URL if available
@@ -49,11 +48,11 @@ export default function AuthPage() {
       
       // Simple error handling with clear messages
       switch(error) {
-        case 'no_code':
-          friendlyMessage = 'Missing authentication code. Please try again.';
+        case 'invalid_otp':
+          friendlyMessage = 'Invalid verification code. Please try again.';
           break;
-        case 'pkce':
-          friendlyMessage = 'The authentication link has expired. Please try again.';
+        case 'phone_not_found':
+          friendlyMessage = 'Phone number not found. Please check and try again.';
           break;
         case 'unknown':
           friendlyMessage = errorMessage || 'Authentication failed. Please try again.';
@@ -81,93 +80,98 @@ export default function AuthPage() {
 
 
 
-  const handleSubmit = async () => {
+  const sendOTP = async () => {
     setError("");
     setIsLoading(true);
 
     try {
       // Validate inputs
-      if (!email) {
-        setError("Please enter your email address");
+      if (!phoneNumber) {
+        setError("Please enter your phone number");
         setIsLoading(false);
         return;
       }
 
-      if (isSignUp && !password) {
-        setError("Please enter a password");
-        setIsLoading(false);
-        return;
+      // Format the phone number if needed
+      let formattedPhone = phoneNumber;
+      if (!phoneNumber.startsWith('+')) {
+        formattedPhone = `+${phoneNumber}`;
       }
 
-      if (isSignUp && password.length < 6) {
-        setError("Password must be at least 6 characters");
-        setIsLoading(false);
-        return;
-      }
-
-      // Save email for convenience
-      localStorage.setItem('lastEmail', email);
+      // Save phone for convenience
+      localStorage.setItem('lastPhone', formattedPhone);
       
-      if (isSignUp) {
-        // Handle sign up
-        console.log('Attempting to sign up with:', email);
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-          },
-        });
+      // Send OTP using useAuth hook
+      const { error } = await signInWithOtp(formattedPhone);
 
-        if (error) {
-          console.error('Sign up error:', error);
-          setError(error.message);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (data?.user) {
-          toast({
-            title: "Account created",
-            description: "You have successfully signed up! Redirecting to dashboard...",
-          });
-          
-          // Redirect to home page after successful signup
-          router.push('/');
-        } else {
-          // In case email verification is needed
-          setNeedsVerification(true);
-          setSavedEmail(email);
-        }
-      } else {
-        // Handle sign in
-        console.log('Attempting to sign in with:', email);
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          console.error('Sign in error:', error);
-          setError(error.message);
-          setIsLoading(false);
-          return;
-        }
-
-        if (data?.user) {
-          toast({
-            title: "Welcome back",
-            description: "You have successfully signed in!",
-          });
-          
-          // Redirect to home page or requested page after successful login
-          const redirectTo = searchParams?.get('redirectTo') || '/';
-          router.push(redirectTo);
-        }
+      if (error) {
+        console.error('OTP request error:', error);
+        setError(error);
+        setIsLoading(false);
+        return;
       }
-    } catch (error: any) {
-      console.error("Authentication error:", error);
-      setError(error.message || "An error occurred during authentication");
+      
+      // Show verification code input
+      setOtpSent(true);
+      toast({
+        title: "Code sent",
+        description: "Check your phone for the verification code",
+      });
+    } catch (e: any) {
+      console.error('Auth error:', e);
+      setError(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOTPCode = async () => {
+    setError("");
+    setIsLoading(true);
+
+    try {
+      // Validate inputs
+      if (!otpCode) {
+        setError("Please enter the verification code");
+        setIsLoading(false);
+        return;
+      }
+
+      // Format the phone number if needed
+      let formattedPhone = phoneNumber;
+      if (!phoneNumber.startsWith('+')) {
+        formattedPhone = `+${phoneNumber}`;
+      }
+      
+      // Verify OTP
+      const { data, error } = await verifyOtp(formattedPhone, otpCode);
+
+      if (error) {
+        console.error('OTP verification error:', error);
+        setError(error);
+        setIsLoading(false);
+        return;
+      }
+
+      // Special handling for admin
+      if (formattedPhone === "+jospenwolongwo") { // Replace with your actual admin phone number
+        localStorage.setItem('adminBypass', 'enabled');
+      }
+
+      if (data?.session) {
+        toast({
+          title: 'Welcome!',
+          description: 'You have been signed in successfully.',
+        });
+        
+        // Get the intended redirect destination
+        const redirectTo = searchParams?.get('redirectTo') || '/';
+        router.push(redirectTo);
+      }
+    } catch (e: any) {
+      console.error('Auth error:', e);
+      setError(e.message);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -185,7 +189,7 @@ export default function AuthPage() {
             <BsCalendarEvent className="mx-auto h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">Welcome to Event Portal</h1>
             <p className="text-muted-foreground">
-              {isSignUp ? 'Create an account to get started' : 'Sign in to your account'}
+              Enter your phone number to get started
             </p>
           </div>
 
@@ -198,77 +202,82 @@ export default function AuthPage() {
           )}
 
           <div className="space-y-6">
-            {needsVerification ? (
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-lg space-y-4">
-                <div className="flex items-center justify-center">
-                  <div className="bg-amber-100 dark:bg-amber-900/40 p-3 rounded-full">
-                    <Mail className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                  </div>
-                </div>
-                
-                <h3 className="text-center text-lg font-medium">Verification Required</h3>
-                
-                <p className="text-center text-sm text-muted-foreground">
-                  We&apos;ve sent a verification email to <strong>{email}</strong>
-                </p>
-                
-                <div className="bg-card p-4 rounded border">
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Check your email inbox for the verification link</li>
-                    <li>Click the link in your email to verify your account</li>
-                    <li>Return here to sign in after verification</li>
+            {otpSent ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-muted/50 rounded-md space-y-2">
+                  <h3 className="font-medium">Verify your phone</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We sent a verification code to <strong>{phoneNumber}</strong>
+                  </p>
+                  <ol className="text-sm text-muted-foreground list-decimal pl-4 space-y-1">
+                    <li>Check your text messages</li>
+                    <li>Enter the code below</li>
                   </ol>
                 </div>
-                
+
+                <div className="space-y-2">
+                  <Label htmlFor="otpCode">Verification Code</Label>
+                  <Input
+                    id="otpCode"
+                    type="text"
+                    placeholder="123456"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <Button
+                  onClick={verifyOTPCode}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Verify Code
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+
                 <div className="grid grid-cols-1 gap-3">
                   <Button
-                    onClick={() => setNeedsVerification(false)}
+                    onClick={() => setOtpSent(false)}
                     variant="outline"
                     className="w-full"
                   >
-                    Back to Sign In
+                    Back to Phone Entry
                   </Button>
-                  
-
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email address</Label>
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Phone className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
+                      id="phoneNumber"
+                      type="tel"
+                      placeholder="+1234567890"
                       className="pl-10"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="u2022u2022u2022u2022u2022u2022"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
                       disabled={isLoading}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {isSignUp ? 'Password must be at least 6 characters' : ''}
+                    Enter your phone number including country code (e.g., +1 for US)
                   </p>
                 </div>
 
                 <Button
-                  onClick={handleSubmit}
+                  onClick={sendOTP}
                   disabled={isLoading}
                   className="w-full flex items-center justify-center"
                 >
@@ -279,41 +288,13 @@ export default function AuthPage() {
                     </>
                   ) : (
                     <>
-                      {isSignUp ? 'Sign Up' : 'Sign In'}
+                      Send Verification Code
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
                 </Button>
-
-                <div className="text-center text-sm pt-2">
-                  <p className="text-muted-foreground">
-                    {isSignUp ? (
-                      <>
-                        Already have an account?{' '}
-                        <button 
-                          onClick={() => setIsSignUp(false)} 
-                          className="text-primary hover:underline"
-                          type="button"
-                        >
-                          Sign in
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        Don&apos;t have an account?{' '}
-                        <button 
-                          onClick={() => setIsSignUp(true)} 
-                          className="text-primary hover:underline"
-                          type="button"
-                        >
-                          Create one
-                        </button>
-                      </>
-                    )}
-                  </p>
-                </div>
                 
-                {email === "jospenwolongwo@gmail.com" && (
+                {phoneNumber === "+jospenwolongwo" && (
                   <p className="text-xs text-muted-foreground mt-1 text-center">
                     Admin account detected - you&apos;ll have access to admin features after login
                   </p>

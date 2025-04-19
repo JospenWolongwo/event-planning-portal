@@ -47,7 +47,7 @@ Event Portal is a full-featured event management system that allows:
 - **Frontend**: Next.js 14, React 18, TypeScript, TailwindCSS, shadcn/ui
 - **Backend**: Next.js API Routes, Supabase
 - **Database**: PostgreSQL (via Supabase)
-- **Authentication**: Supabase Auth (Email-based)
+- **Authentication**: Supabase Auth (Phone OTP-based)
 - **Storage**: Supabase Storage
 - **Payments**: MTN Mobile Money, Orange Money, Credit Card integration
 - **Analytics**: Vercel Analytics
@@ -115,11 +115,16 @@ Event Portal is a full-featured event management system that allows:
 
 **Important**: For ease of testing, **all authenticated users** can access admin features!
 
-The app provides two simple options for authentication:
+The app uses Phone OTP (One-Time Password) based authentication:
 
-1. **Test Mode**: Click the 'Test Application' button on the login page to instantly access the app without email verification.
+1. **Test Credentials**: 
+   - Phone Number: 698805890
+   - OTP Code: 110011
 
-2. **Email Authentication**: Enter your email to receive a magic link (for standard authentication flow testing).
+2. **OTP Authentication Flow**:
+   - Enter your phone number on the login page
+   - You'll receive a 6-digit OTP code (use 110011 for testing)
+   - Enter the OTP to authenticate
 
 Once authenticated, you can access the admin dashboard through the user dropdown menu in the navigation bar or by visiting `/admin`.
 
@@ -196,6 +201,19 @@ Event images are stored in Supabase Storage with the following specifications:
    - Images are processed and resized on the client before uploading
    - CDN caching is enabled for faster loading
 
+## Favicon
+
+To add a custom favicon to the application:
+
+1. Create your favicon.ico file (typically 32x32 pixels)
+2. Place it in the `public` directory at the root of the project
+3. Next.js will automatically detect and use this file as the favicon
+
+You can also add additional icon sizes and formats in the public directory:
+- apple-touch-icon.png (180x180 pixels) for iOS devices
+- favicon-16x16.png and favicon-32x32.png for different device resolutions
+- site.webmanifest for PWA configuration
+
 ## Deployment
 
 This project can be deployed to Vercel, Netlify, or any other platform that supports Next.js applications.
@@ -228,7 +246,7 @@ vercel
 
 The application uses a dual authentication system:
 
-1. **Supabase Authentication**: Provides secure, production-ready authentication via magic links
+1. **Supabase Authentication**: Provides secure, production-ready authentication via phone OTP
 2. **Custom Auth Hook**: Implemented with Zustand for state management and persistence
 
 For development and testing, all authenticated users can access admin features to facilitate easier testing.
