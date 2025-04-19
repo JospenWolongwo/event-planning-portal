@@ -14,9 +14,16 @@ export async function GET(request: Request) {
     const supabase = createRouteHandlerClient({ cookies })
     
     // Exchange the auth code for a session
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (error) {
+      // Redirect to auth page with error parameters if something went wrong
+      return NextResponse.redirect(
+        `${requestUrl.origin}/auth?error=${error.name}&errorDescription=${encodeURIComponent(error.message)}`
+      )
+    }
   }
   
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin)
+  // Add a hash parameter to trigger the client-side auth refresh
+  return NextResponse.redirect(`${requestUrl.origin}/?auth_callback=success#auth-refresh`)
 }

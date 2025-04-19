@@ -27,8 +27,8 @@ import { isAdmin } from '@/lib/utils/admin'
 import { useAuth } from '@/hooks/useAuth'
 
 export function Navbar() {
-  const { supabase, user: supabaseUser } = useSupabase()
-  const { user: authUser } = useAuth()
+  const { supabase, session: supabaseSession } = useSupabase()
+  const { user: authUser, session: authSession } = useAuth()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false)
@@ -39,8 +39,9 @@ export function Navbar() {
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
 
-  // Simplified user detection - just use the authenticated user from either source
-  const user = supabaseUser || authUser;
+  // Improved user detection - use the authenticated user from either source
+  const user = supabaseSession?.user || authUser;
+  const session = supabaseSession || authSession;
 
   useEffect(() => {
     setMounted(true);
@@ -49,6 +50,23 @@ export function Navbar() {
     } else {
       setShowAndroid(true);
     }
+    
+    // Listen for auth state changes
+    const handleAuthChange = (e: any) => {
+      const { user: newUser, session: newSession } = e.detail;
+      console.log('Auth state change detected in navbar:', newUser);
+      // Force re-render by updating component state
+      if (newUser) {
+        // We have a new authentication - update UI accordingly
+        setAvatarUrl(null); // Reset to trigger a re-fetch
+      }
+    };
+    
+    window.addEventListener('auth-state-changed', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('auth-state-changed', handleAuthChange);
+    };
   }, [setShowAndroid, isIOSDevice]);
 
   useEffect(() => {

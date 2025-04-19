@@ -166,11 +166,16 @@ if (typeof window !== 'undefined') {
     useAuth.getState().getSession();
   }, 0);
   
-  // Set up auth state change listener
+  // Set up auth state change listener with improved synchronization
   supabase.auth.onAuthStateChange((event, session) => {
     console.log('Auth state changed:', event, session);
     if (session?.user) {
       useAuth.setState({ user: session.user, session: session });
+      
+      // Dispatch a custom event to ensure all components are updated
+      window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+        detail: { user: session.user, session: session }
+      }));
       
       // Redirect admin users to dashboard
       if (isAdmin(session.user)) {
@@ -186,6 +191,10 @@ if (typeof window !== 'undefined') {
       const testSessionJson = localStorage.getItem('test-session');
       if (!testSessionJson) {
         useAuth.setState({ user: null, session: null });
+        // Also dispatch event for logout
+        window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+          detail: { user: null, session: null }
+        }));
       }
     }
   });
@@ -195,6 +204,11 @@ if (typeof window !== 'undefined') {
     if (e.detail?.event === 'SIGNED_IN' && e.detail?.session) {
       const session = e.detail.session;
       useAuth.setState({ user: session.user, session: session });
+      
+      // Also dispatch our custom event
+      window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+        detail: { user: session.user, session: session }
+      }));
     }
   });
 }
