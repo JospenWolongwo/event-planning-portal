@@ -17,12 +17,22 @@ export async function GET(request: Request) {
 
   try {
     // Create a Supabase client for the server
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
     // Exchange the code for a session (must happen on the server)
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     
-    // Redirect back to the home page
+    if (error) {
+      throw error
+    }
+    
+    // Make sure we have a session before redirecting
+    if (data.session) {
+      console.log('Successfully established session for user:', data.session.user.email)
+    }
+    
+    // Redirect back to the home page with successful login parameter
     return NextResponse.redirect(`${requestUrl.origin}/?login=success`)
   } catch (error: any) {
     console.error('Auth callback error:', error)

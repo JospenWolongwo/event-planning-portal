@@ -14,18 +14,23 @@ const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined
 
 export const SupabaseProvider = ({ children }: { children: React.ReactNode }) => {
   const [supabase] = useState(() => {
-    // Create the Supabase client with PKCE-specific options to prevent code verifier/challenge mismatch
+    // Create the Supabase client with enhanced options for persistent sessions
     return createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         auth: {
           persistSession: true,
-          storageKey: 'event-portal-auth-state',
-          // Force a longer storage duration for auth state
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          flowType: 'pkce'
+          storageKey: 'event-portal-auth-token',
+          autoRefreshToken: true
+        },
+        // Configure cookie options at the top level
+        cookieOptions: {
+          name: 'event-portal-auth',
+          maxAge: 60 * 60 * 24 * 7, // 1 week in seconds
+          path: '/',
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production'
         }
       }
     )
