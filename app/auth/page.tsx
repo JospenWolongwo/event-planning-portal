@@ -57,6 +57,28 @@ function AuthContent() {
         case 'no_code':
           errorMessage = 'No authentication code was provided. Please try the magic link again or request a new one.';
           break;
+        case 'pkce_error':
+          errorMessage = 'The authentication link has expired or was already used. Please request a new magic link.';
+          // Auto-clear the previous auth state for PKCE errors
+          if (typeof window !== 'undefined') {
+            // Clear any existing auth state from localStorage to start fresh
+            localStorage.removeItem('supabase.auth.token');
+            localStorage.removeItem('supabase.auth.refreshToken');
+          }
+          break;
+        case 'callback_error':
+          // Handle the specific PKCE error message
+          if (errorDescription?.includes('code challenge') || errorDescription?.includes('code verifier')) {
+            errorMessage = 'The authentication link has expired or was already used. Please request a new magic link.';
+            // Auto-clear the previous auth state for PKCE errors
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('supabase.auth.token');
+              localStorage.removeItem('supabase.auth.refreshToken');
+            }
+          } else {
+            errorMessage = `Authentication error: ${errorDescription || 'Unknown'}. Please try again.`;
+          }
+          break;
         case 'session_error':
           errorMessage = `Session error: ${errorDescription || 'Unknown'}. Please try again with a new magic link.`;
           break;

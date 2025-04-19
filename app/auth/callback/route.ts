@@ -17,12 +17,24 @@ export async function GET(request: Request) {
       // Exchange the auth code for a session
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error exchanging code for session:", error);
+        // For PKCE errors, redirect to auth page with a special parameter to restart the auth flow
+        if (error.message?.includes('code challenge') || error.message?.includes('code verifier')) {
+          // This is a PKCE error - the code verifier was lost, we need to start over
+          return NextResponse.redirect(`${requestUrl.origin}/auth?error=pkce_error&restart=true`);
+        }
+        throw error;
+      }
       
       if (data?.session) {
         // Success - redirect with a signal to force a full refresh
-        // Adding both auth=success and refresh parameters to ensure UI updates
-        return NextResponse.redirect(`${requestUrl.origin}/?auth=success&refresh=${Date.now()}`);
+        // Using only refresh parameter to reduce complexity
+        return NextResponse.redirect(`${requestUrl.origin}/?refresh=${Date.now()}`);
+      } else {
+        // No session was returned, but no error either - unusual case
+        console.error("No session returned from exchangeCodeForSession");
+        return NextResponse.redirect(`${requestUrl.origin}/auth?error=no_session&errorDescription=Authentication succeeded but no session was created`);
       }
     } catch (error: any) {
       console.error("Error in auth callback:", error);
