@@ -41,13 +41,7 @@ export default function AdminOrganizersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
 
-  useEffect(() => {
-    // Skip admin checks - all authenticated users can access
-    loadOrganizers()
-  }, [loadOrganizers])
-
-  // Admin access check removed - all authenticated users can access
-
+  // Define loadOrganizers function before using it in useEffect
   const loadOrganizers = useCallback(async () => {
     setLoading(true)
     try {
@@ -96,9 +90,14 @@ export default function AdminOrganizersPage() {
     } finally {
       setLoading(false)
     }
-  }, [supabase])
+  }, [supabase, toast])
 
-  const handlePromoteToOrganizer = async (userId: string) => {
+  useEffect(() => {
+    // Skip admin checks - all authenticated users can access
+    loadOrganizers()
+  }, [loadOrganizers])
+
+  const handlePromoteToOrganizer = useCallback(async (userId: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
@@ -121,9 +120,9 @@ export default function AdminOrganizersPage() {
         variant: "destructive"
       })
     }
-  }
+  }, [supabase, toast, loadOrganizers])
 
-  const handleRemoveOrganizer = async (userId: string) => {
+  const handleRemoveOrganizer = useCallback(async (userId: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
@@ -134,22 +133,21 @@ export default function AdminOrganizersPage() {
 
       toast({
         title: "Success",
-        description: "Organizer privileges have been revoked.",
+        description: "Organizer privileges have been removed.",
       })
       
       loadOrganizers()
     } catch (error) {
-      console.error('Error removing organizer:', error)
+      console.error('Error removing organizer privileges:', error)
       toast({
         title: "Error",
-        description: "Failed to remove organizer. Please try again.",
+        description: "Failed to remove organizer privileges. Please try again.",
         variant: "destructive"
       })
     }
-  }
+  }, [supabase, toast, loadOrganizers])
 
   const filteredOrganizers = organizers.filter(organizer => {
-    // Filter by search query
     if (searchQuery && !organizer.full_name.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false
     }

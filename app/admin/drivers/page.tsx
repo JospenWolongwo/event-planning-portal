@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSupabase } from "@/providers/SupabaseProvider"
 import { Button } from "@/components/ui/button"
@@ -47,14 +47,8 @@ export default function AdminDriversPage() {
   const [applications, setApplications] = useState<DriverApplication[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Skip admin checks - all authenticated users can access
-    loadApplications()
-  }, [loadApplications])
-
-  // Admin access check removed - all authenticated users can access
-
-  const loadApplications = React.useCallback(async () => {
+  // Define loadApplications function before using it in useEffect
+  const loadApplications = useCallback(async () => {
     try {
       setLoading(true)
       const { data: profiles, error: profilesError } = await supabase
@@ -118,6 +112,13 @@ export default function AdminDriversPage() {
       setLoading(false)
     }
   }, [supabase])
+
+  useEffect(() => {
+    // Skip admin checks - all authenticated users can access
+    loadApplications()
+  }, [loadApplications])
+
+  // Admin access check removed - all authenticated users can access
 
   const updateDriverStatus = async (driverId: string, status: string) => {
     try {
