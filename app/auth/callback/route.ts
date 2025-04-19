@@ -14,8 +14,12 @@ export async function GET(request: Request) {
       // Create a Supabase client using the route handler helper
       const supabase = createRouteHandlerClient({ cookies });
 
-      // Exchange the auth code for a session - simplifying to minimize errors
+      // Exchange the auth code for a session
       await supabase.auth.exchangeCodeForSession(code);
+
+      // Redirect back to the home page with a refresh signal
+      // The query parameter will trigger a full page refresh to reset auth state
+      return NextResponse.redirect(`${requestUrl.origin}?refresh=${Date.now()}&authSuccess=true`);
     } catch (error: any) {
       console.error("Error in auth callback:", error);
       // Redirect to auth page with error parameters if something went wrong
@@ -29,6 +33,8 @@ export async function GET(request: Request) {
     }
   }
 
-  // Redirect to the home page without additional parameters that might interfere with the auth flow
-  return NextResponse.redirect(requestUrl.origin);
+  // If no code was provided, redirect to auth page with an error
+  return NextResponse.redirect(
+    `${requestUrl.origin}/auth?error=no_code&errorDescription=No authentication code was provided`
+  );
 }

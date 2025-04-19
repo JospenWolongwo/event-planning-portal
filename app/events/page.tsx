@@ -71,15 +71,14 @@ export default function EventsPage() {
         const from = (currentPage - 1) * pageSize
         const to = from + pageSize - 1
         
-        // Start building the query
+        // Query events from Supabase
         let query = supabase
           .from('events')
           .select(`
             id, title, description, location, 
             event_date, event_time, price, capacity, 
             image_url, category, organizer_id, 
-            profiles(id, full_name, avatar_url),
-            registrations(id)
+            profiles(id, full_name, avatar_url)
           `, { count: 'exact' })
         
         // Apply filters if they exist
@@ -129,23 +128,30 @@ export default function EventsPage() {
           throw error
         }
         
-        // Get registration counts for each event - using countBy function instead of group_by
+        // Get registration counts for each event
         const eventIds = eventsData.map((event: any) => event.id)
         
-        // Alternative approach to get registration counts without using group_by
-        // Query registrations for each event individually and count them
+        // Setup a default count of 0 registrations for each event
         const registrationCounts: Record<string, number> = {}
+        eventIds.forEach(id => {
+          registrationCounts[id] = 0
+        })
         
-        // For each event, count its registrations
-        for (const eventId of eventIds) {
-          const { count: regCount, error: countError } = await supabase
-            .from('registrations')
-            .select('*', { count: 'exact' })
-            .eq('event_id', eventId)
-            
-          if (!countError) {
-            registrationCounts[eventId] = regCount || 0
+        // Try to get registration counts if the event_registrations table exists
+        try {
+          for (const eventId of eventIds) {
+            const { count: regCount, error: countError } = await supabase
+              .from('event_registrations') // Using the correct table name suggested in the error
+              .select('*', { count: 'exact' })
+              .eq('event_id', eventId)
+              
+            if (!countError) {
+              registrationCounts[eventId] = regCount || 0
+            }
           }
+        } catch (error) {
+          console.log('Registration count error:', error)
+          // Continue with default counts (0) if there's an error
         }
         
         // Transform the data to include organizer information and registration counts

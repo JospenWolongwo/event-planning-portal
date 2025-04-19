@@ -39,12 +39,14 @@ export function Navbar() {
   const { setShowAndroid } = useShowAndroidPrompt();
   const { isIOSDevice, isAndroidDevice } = useDeviceDetect();
 
-  // Improved user detection - use the authenticated user from either source
-  const user = supabaseSession?.user || authUser;
-  const session = supabaseSession || authSession;
+  // Enhanced user detection - prioritize auth state from multiple sources
+  const user = authUser || supabaseSession?.user;
+  const session = authSession || supabaseSession;
 
   useEffect(() => {
     setMounted(true);
+    
+    // Handle PWA prompts
     if (isIOSDevice) {
       setShowIOSPrompt(true);
     } else {
@@ -64,10 +66,33 @@ export function Navbar() {
     
     window.addEventListener('auth-state-changed', handleAuthChange);
     
+    // Add page load auth check
+    const checkAuthOnLoad = () => {
+      if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has('refresh') || searchParams.has('authSuccess')) {
+          // Force auth check if coming from auth callback
+          supabase.auth.getSession().then(({ data }) => {
+            if (data?.session?.user) {
+              // Manually dispatch auth state change event
+              window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+                detail: { 
+                  user: data.session.user, 
+                  session: data.session 
+                } 
+              }));
+            }
+          });
+        }
+      }
+    };
+    
+    checkAuthOnLoad();
+    
     return () => {
       window.removeEventListener('auth-state-changed', handleAuthChange);
     };
-  }, [setShowAndroid, isIOSDevice]);
+  }, [setShowAndroid, isIOSDevice, supabase]);
 
   useEffect(() => {
     if (user) {

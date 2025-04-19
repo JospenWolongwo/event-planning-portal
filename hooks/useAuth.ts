@@ -133,25 +133,40 @@ export const useAuth = create<AuthState>()(
       },
 
       getSession: async () => {
-        // First check for a test session
-        const testSessionJson = localStorage.getItem('test-session');
-        if (testSessionJson) {
-          try {
-            const testSession = JSON.parse(testSessionJson);
-            set({ user: testSession.user, session: testSession });
-            return;
-          } catch (e) {
-            console.error('Error parsing test session:', e);
-            localStorage.removeItem('test-session');
+        try {
+          // First check for a test session
+          const testSessionJson = localStorage.getItem('test-session');
+          if (testSessionJson) {
+            try {
+              const testSession = JSON.parse(testSessionJson);
+              set({ user: testSession.user, session: testSession });
+              console.log('Loaded test session:', testSession.user?.email);
+              return;
+            } catch (e) {
+              console.error('Error parsing test session:', e);
+              localStorage.removeItem('test-session');
+            }
           }
+          
+          // Otherwise check for a real session
+          const { data } = await supabase.auth.getSession();
+          if (data?.session?.user) {
+            set({ user: data.session.user, session: data.session });
+            console.log('Loaded Supabase session:', data.session.user.email);
+            
+            // Dispatch event to notify other components
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+                detail: { user: data.session.user, session: data.session }
+              }));
+            }
+          } else {
+            console.log('No session found');
+          }
+        } catch (error) {
+          console.error('Error getting session:', error);
         }
-        
-        // Otherwise check for a real session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          set({ user: session.user, session: session });
-        }
-      },
+      }
     }),
     {
       name: 'auth-storage',
