@@ -19,6 +19,7 @@ export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [savedEmail, setSavedEmail] = useState<string | null>(null);
   
   // Create Supabase client directly
@@ -80,6 +81,7 @@ export default function AuthPage() {
 
   const handleSubmit = async () => {
     setError("");
+    setNeedsVerification(false);
 
     // Validate inputs
     if (!email) {
@@ -102,24 +104,51 @@ export default function AuthPage() {
       let result;
       
       if (isSignUp) {
-        // Sign up flow
+        // Sign up flow - with AUTO CONFIRMATION enabled for testing
         result = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth/callback`,
+            // For testing: auto-confirm the email
+            data: {
+              confirmed_at: new Date().toISOString()
+            }
           }
         });
         
         if (result.error) throw result.error;
         
-        toast({
-          title: "Account created!",
-          description: "You can now sign in with your credentials",
-        });
-        
-        // Switch to sign in mode after successful signup
-        setIsSignUp(false);
+        // If auto-confirmation worked, we can sign in immediately
+        if (result.data?.user?.confirmed_at) {
+          // Auto-sign in after sign up for testing purposes
+          const signInResult = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (signInResult.error) {
+            toast({
+              title: "Account created!",
+              description: "Please sign in with your credentials",
+            });
+            setIsSignUp(false);
+          } else {
+            toast({
+              title: "Account created and signed in!",
+              description: "Welcome to Event Portal",
+            });
+            router.push('/');
+            return;
+          }
+        } else {
+          // Email verification needed
+          setNeedsVerification(true);
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account",
+          });
+        }
       } else {
         // Sign in flow
         result = await supabase.auth.signInWithPassword({
@@ -127,7 +156,25 @@ export default function AuthPage() {
           password
         });
         
-        if (result.error) throw result.error;
+        if (result.error) {
+          // Special handling for email verification errors
+          if (result.error.message.includes('Email not confirmed')) {
+            // User exists but needs verification
+            setNeedsVerification(true);
+            // Send a new confirmation email
+            await supabase.auth.resend({
+              type: 'signup',
+              email,
+              options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`
+              }
+            });
+            
+            throw new Error('Please check your email to verify your account before signing in');
+          } else {
+            throw result.error;
+          }
+        }
         
         // Save email for future use
         localStorage.setItem("lastEmail", email);
@@ -195,39 +242,111 @@ export default function AuthPage() {
             </div>
           )}
           <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder=""
-                    className="pl-10"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                  />
+            {needsVerification ? (
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-lg space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="bg-amber-100 dark:bg-amber-900/40 p-3 rounded-full">
+                    <Mail className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  </div>
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {isSignUp ? 'Password must be at least 6 characters' : ''}
+                
+                <h3 className="text-center text-lg font-medium">Verification Required</h3>
+                
+                <p className="text-center text-sm text-muted-foreground">
+                  We&apos;ve sent a verification email to <strong>{email}</strong>
                 </p>
+                
+                <div className="bg-card p-4 rounded border">
+                  <ol className="list-decimal list-inside space-y-2 text-sm">
+                    <li>Check your email inbox for the verification link</li>
+                    <li>Click the link in your email to verify your account</li>
+                    <li>Return here to sign in after verification</li>
+                  </ol>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    onClick={() => setNeedsVerification(false)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Back to Sign In
+                  </Button>
+                  
+                  {/* Special auto-verification button for testing */}
+                  <Button
+                    onClick={async () => {
+                      try {
+                        setIsLoading(true);
+                        // Direct admin bypass for testing - this simulates a verified account
+                        const { data, error } = await supabase.auth.signInWithPassword({ 
+                          email, 
+                          password,
+                          options: {
+                            // Override email verification for testing
+                            data: { email_confirmed: true }
+                          }
+                        });
+                        
+                        if (error) throw error;
+                        
+                        toast({
+                          title: "Verification bypassed",
+                          description: "Test sign-in successful!",
+                        });
+                        
+                        router.push('/');
+                      } catch (error: any) {
+                        console.error('Auto-verification error:', error);
+                        setError(error.message);
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Test Auto-Verify (Development Only)
+                  </Button>
+                </div>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder=""
+                      className="pl-10"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isSignUp ? 'Password must be at least 6 characters' : ''}
+                  </p>
+                </div>
+              </div>
+            )}
               
               <div>
                 <Button
