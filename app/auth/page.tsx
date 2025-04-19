@@ -15,8 +15,9 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState("");
   const [savedEmail, setSavedEmail] = useState<string | null>(null);
   
@@ -77,44 +78,73 @@ export default function AuthPage() {
     }
   }, [searchParams, router]);
 
-  const handleContinue = async () => {
+  const handleSubmit = async () => {
     setError("");
-    setMagicLinkSent(false);
 
-    // Email authentication
-    if (!email && !savedEmail) {
+    // Validate inputs
+    if (!email) {
       setError("Please enter your email address");
+      return;
+    }
+
+    if (!password) {
+      setError("Please enter your password");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
       return;
     }
 
     setIsLoading(true);
     try {
-      const emailToUse = email || savedEmail || "";
+      let result;
       
-      // Simple, direct Supabase auth - no custom hooks
-      const { error } = await supabase.auth.signInWithOtp({
-        email: emailToUse,
-        options: {
-          // Add redirect URL for the email magic link
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+      if (isSignUp) {
+        // Sign up flow
+        result = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          }
+        });
+        
+        if (result.error) throw result.error;
+        
+        toast({
+          title: "Account created!",
+          description: "You can now sign in with your credentials",
+        });
+        
+        // Switch to sign in mode after successful signup
+        setIsSignUp(false);
+      } else {
+        // Sign in flow
+        result = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (result.error) throw result.error;
+        
+        // Save email for future use
+        localStorage.setItem("lastEmail", email);
+        
+        if (result.data?.session) {
+          toast({
+            title: "Signed in successfully!",
+            description: "Welcome back",
+          });
+          
+          // Redirect to home page
+          router.push('/');
         }
-      });
-      
-      if (error) throw error;
-
-      // Save email for future use
-      localStorage.setItem("lastEmail", emailToUse);
-
-      // Set magic link sent state
-      setMagicLinkSent(true);
-
-      toast({
-        title: "Magic link sent!",
-        description: "Please check your email for the login link",
-      });
+      }
     } catch (error: any) {
-      console.error('Sign in error:', error);
-      setError(error.message || 'Failed to send magic link');
+      console.error('Auth error:', error);
+      setError(error.message || 'Authentication failed');
     } finally {
       setIsLoading(false);
     }
@@ -165,96 +195,94 @@ export default function AuthPage() {
             </div>
           )}
           <div className="space-y-6">
-            {!magicLinkSent ? (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder=""
-                      className="pl-10"
-                      value={email || savedEmail || ""}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {email === "jospenwolongwo@gmail.com" && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Admin account detected - you&apos;ll be redirected to the admin dashboard after login
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <Button
-                    onClick={handleContinue}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder=""
+                    className="pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Please wait...
-                      </>
-                    ) : (
-                      <>
-                        Continue
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
+                  />
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isSignUp ? 'Password must be at least 6 characters' : ''}
+                </p>
+              </div>
+              
+              <div>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Please wait...
+                    </>
+                  ) : (
+                    <>
+                      {isSignUp ? 'Sign Up' : 'Sign In'}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
 
-                <div className="text-center text-sm">
-                  <p className="text-muted-foreground">
-                    We&apos;ll send you a magic link to log in
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg space-y-4">
-                <div className="flex items-center justify-center">
-                  <div className="bg-green-100 dark:bg-green-900/40 p-3 rounded-full">
-                    <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                </div>
-                
-                <h3 className="text-center text-lg font-medium">Magic link sent!</h3>
-                
-                <p className="text-center text-sm text-muted-foreground">
-                  We&apos;ve sent a login link to <strong>{email || savedEmail}</strong>
-                </p>
-                
-                <div className="bg-card p-4 rounded border">
-                  <ol className="list-decimal list-inside space-y-2 text-sm">
-                    <li>Check your email inbox for the login link</li>
-                    <li>Click the link in your email (valid for 24 hours)</li>
-                    <li>You&apos;ll be automatically signed in to your account</li>
-                  </ol>
-                </div>
-                
-                <div>
-                  <Button
-                    onClick={handleContinue}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Send another link
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {!magicLinkSent && (
-              <div className="text-center text-sm mt-4">
+              <div className="text-center text-sm pt-2">
                 <p className="text-muted-foreground">
-                  Enter your email above and click Continue to sign in
+                  {isSignUp ? (
+                    <>
+                      Already have an account?{' '}
+                      <button 
+                        onClick={() => setIsSignUp(false)} 
+                        className="text-primary hover:underline"
+                        type="button"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Don&apos;t have an account?{' '}
+                      <button 
+                        onClick={() => setIsSignUp(true)} 
+                        className="text-primary hover:underline"
+                        type="button"
+                      >
+                        Create one
+                      </button>
+                    </>
+                  )}
                 </p>
               </div>
-            )}
+              
+              {email === "jospenwolongwo@gmail.com" && (
+                <p className="text-xs text-muted-foreground mt-1 text-center">
+                  Admin account detected - you&apos;ll have access to admin features after login
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
