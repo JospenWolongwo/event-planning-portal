@@ -25,11 +25,8 @@ export default function AdminLayout({
           return;
         }
         
-        // For testing purposes, allow all authenticated users to access admin functionality
-        console.log('User authenticated, granting admin access for testing');
-        
-        // Set admin status to true for any authenticated user
-        const adminAccess = true;
+        // All authenticated users have admin access
+        console.log('User authenticated, granting admin access');
         
         // User has admin access
         setIsAdmin(true);

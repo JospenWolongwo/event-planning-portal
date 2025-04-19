@@ -1,34 +1,27 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-import { ArrowRight, Lock, Loader2, Mail, User, Key, Bug } from "lucide-react";
+import { ArrowRight, Loader2, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BsCalendarEvent } from "react-icons/bs";
-// Simplified authentication approach - no separate admin bypass needed
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+// Simple, direct Supabase-based authentication with no custom hooks
 
 export default function AuthPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <AuthContent />
-    </Suspense>
-  );
-}
-
-function AuthContent() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState("");
   const [savedEmail, setSavedEmail] = useState<string | null>(null);
-  // Simplified auth - no need for multiple test options
-  const { signInWithEmail, testSignIn } = useAuth();
+  
+  // Create Supabase client directly
+  const supabase = createClientComponentClient();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,60 +35,47 @@ function AuthContent() {
 
     // Get error info from URL if available
     const error = searchParams?.get('error');
-    const errorDescription = searchParams?.get('errorDescription');
+    const errorMessage = searchParams?.get('message');
 
     // Log any auth errors to help debug issues
     if (error) {
-      console.error('Auth page loaded with error:', error, errorDescription);
+      console.log('Auth page loaded with error:', error, errorMessage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-      // Set error message based on error code
-      let errorMessage = '';
+      // Set user-friendly error message based on error code
+      let friendlyMessage = '';
       
-      // Special error handling for different error codes
+      // Simple error handling with clear messages
       switch(error) {
         case 'no_code':
-          errorMessage = 'No authentication code was provided. Please try the magic link again or request a new one.';
+          friendlyMessage = 'Missing authentication code. Please try the magic link again or request a new one.';
           break;
-        case 'pkce_error':
-          errorMessage = 'The authentication link has expired or was already used. Please request a new magic link.';
-          // Auto-clear the previous auth state for PKCE errors
-          if (typeof window !== 'undefined') {
-            // Clear any existing auth state from localStorage to start fresh
-            localStorage.removeItem('supabase.auth.token');
-            localStorage.removeItem('supabase.auth.refreshToken');
-          }
+        case 'pkce':
+          friendlyMessage = 'The authentication link was already used or has expired. Please request a new magic link below.';
           break;
-        case 'callback_error':
-          // Handle the specific PKCE error message
-          if (errorDescription?.includes('code challenge') || errorDescription?.includes('code verifier')) {
-            errorMessage = 'The authentication link has expired or was already used. Please request a new magic link.';
-            // Auto-clear the previous auth state for PKCE errors
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('supabase.auth.token');
-              localStorage.removeItem('supabase.auth.refreshToken');
-            }
-          } else {
-            errorMessage = `Authentication error: ${errorDescription || 'Unknown'}. Please try again.`;
-          }
-          break;
-        case 'session_error':
-          errorMessage = `Session error: ${errorDescription || 'Unknown'}. Please try again with a new magic link.`;
-          break;
-        case 'exchange_error':
-          errorMessage = `Authentication code couldn't be processed: ${errorDescription || 'Unknown'}. Please try again with a new link.`;
-          break;
-        case 'unexpected':
-          errorMessage = 'An unexpected error occurred during authentication. Please try again.';
+        case 'unknown':
+          friendlyMessage = errorMessage || 'Authentication failed. Please try again with a new magic link.';
           break;
         default:
-          errorMessage = errorDescription || 'Authentication failed for an unknown reason. Please try again.';
+          friendlyMessage = 'Authentication error. Please try again.';
           break;
       }
       
-      setError(errorMessage);
+      setError(friendlyMessage);
     }
-  }, [searchParams]);
+    
+    // Check if we've been redirected after a successful login
+    const loginSuccess = searchParams?.get('login') === 'success';
+    if (loginSuccess) {
+      // Remove the parameter from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('login');
+      window.history.replaceState({}, '', url.toString());
+      
+      // Redirect to homepage
+      router.push('/');
+    }
+  }, [searchParams, router]);
 
   const handleContinue = async () => {
     setError("");
@@ -111,8 +91,16 @@ function AuthContent() {
     try {
       const emailToUse = email || savedEmail || "";
       
-      const { error: signInError } = await signInWithEmail(emailToUse);
-      if (signInError) throw new Error(signInError);
+      // Simple, direct Supabase auth - no custom hooks
+      const { error } = await supabase.auth.signInWithOtp({
+        email: emailToUse,
+        options: {
+          // Add redirect URL for the email magic link
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        }
+      });
+      
+      if (error) throw error;
 
       // Save email for future use
       localStorage.setItem("lastEmail", emailToUse);
@@ -125,28 +113,15 @@ function AuthContent() {
         description: "Please check your email for the login link",
       });
     } catch (error: any) {
-      setError(error.message);
+      console.error('Sign in error:', error);
+      setError(error.message || 'Failed to send magic link');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTestSignIn = async () => {
-    setIsLoading(true);
-    try {
-      // For the test application, we're just using the 'admin' role for simplicity
-      await testSignIn('admin');
-      
-      toast({
-        title: "Test login successful!",
-        description: "You now have access to all features",
-      });
-    } catch (error: any) {
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Since we have simplified the auth to allow all authenticated users to access admin features,
+  // we don't need a separate test sign-in function anymore
 
   // No need for toggling test options in simplified approach
 
