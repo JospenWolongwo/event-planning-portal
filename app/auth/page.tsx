@@ -79,118 +79,95 @@ export default function AuthPage() {
     }
   }, [searchParams, router]);
 
-  const handleAutoVerifyForTesting = async () => {
-    try {
-      setIsLoading(true);
-      // For testing - this simulates a verified account sign-in
-      const { error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password
-      });
-      
-      if (error) {
-        if (error.message.includes('Email not confirmed')) {
-          // For testing, we'll just bypass this error and redirect to the home page
-          toast({
-            title: "Test mode: Bypassing email verification",
-            description: "Redirecting to home page..."
-          });
-          
-          // Set a fake session in localStorage for admin bypass
-          localStorage.setItem('event-portal-bypass', 'true');
-          router.push('/');
-          return;
-        }
-        throw error;
-      }
-      
-      toast({
-        title: "Authentication successful",
-        description: "Test sign-in successful!",
-      });
-      
-      router.push('/');
-    } catch (error: any) {
-      console.error('Auto-verification error:', error);
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   const handleSubmit = async () => {
     setError("");
-    setNeedsVerification(false);
-
-    // Validate inputs
-    if (!email) {
-      setError("Please enter your email address");
-      return;
-    }
-
-    if (!password) {
-      setError("Please enter your password");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-
     setIsLoading(true);
+
     try {
+      // Validate inputs
+      if (!email) {
+        setError("Please enter your email address");
+        setIsLoading(false);
+        return;
+      }
+
+      if (isSignUp && !password) {
+        setError("Please enter a password");
+        setIsLoading(false);
+        return;
+      }
+
+      if (isSignUp && password.length < 6) {
+        setError("Password must be at least 6 characters");
+        setIsLoading(false);
+        return;
+      }
+
+      // Save email for convenience
+      localStorage.setItem('lastEmail', email);
+      
       if (isSignUp) {
-        // Sign up flow
-        const { error } = await supabase.auth.signUp({
+        // Handle sign up
+        console.log('Attempting to sign up with:', email);
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`
-          }
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
         });
-        
-        if (error) throw error;
-        
-        // Save email for future use
-        localStorage.setItem("lastEmail", email);
-        
-        // Email verification is required
-        setNeedsVerification(true);
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account",
-        });
-      } else {
-        // Sign in flow
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
+
         if (error) {
-          // Handle "Email not confirmed" error specially
-          if (error.message.includes('Email not confirmed')) {
-            setNeedsVerification(true);
-            throw new Error('Please verify your email before signing in');
-          }
-          throw error;
+          console.error('Sign up error:', error);
+          setError(error.message);
+          setIsLoading(false);
+          return;
         }
         
-        // Save email for future use
-        localStorage.setItem("lastEmail", email);
-        
-        toast({
-          title: "Signed in successfully!",
-          description: "Welcome back",
+        if (data?.user) {
+          toast({
+            title: "Account created",
+            description: "You have successfully signed up! Redirecting to dashboard...",
+          });
+          
+          // Redirect to home page after successful signup
+          router.push('/');
+        } else {
+          // In case email verification is needed
+          setNeedsVerification(true);
+          setSavedEmail(email);
+        }
+      } else {
+        // Handle sign in
+        console.log('Attempting to sign in with:', email);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        
-        router.push('/');
+
+        if (error) {
+          console.error('Sign in error:', error);
+          setError(error.message);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data?.user) {
+          toast({
+            title: "Welcome back",
+            description: "You have successfully signed in!",
+          });
+          
+          // Redirect to home page or requested page after successful login
+          const redirectTo = searchParams?.get('redirectTo') || '/';
+          router.push(redirectTo);
+        }
       }
     } catch (error: any) {
-      console.error('Auth error:', error);
-      setError(error.message || 'Authentication failed');
-    } finally {
+      console.error("Authentication error:", error);
+      setError(error.message || "An error occurred during authentication");
       setIsLoading(false);
     }
   };
@@ -252,16 +229,7 @@ export default function AuthPage() {
                     Back to Sign In
                   </Button>
                   
-                  {/* Special auto-verification button for testing */}
-                  <Button
-                    onClick={handleAutoVerifyForTesting}
-                    variant="secondary"
-                    className="w-full"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Test Login (Development Only)
-                  </Button>
+
                 </div>
               </div>
             ) : (

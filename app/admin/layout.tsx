@@ -11,34 +11,19 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
-  const { supabase } = useSupabase()
-  const { user, session } = useAuth()
-  const [isAdmin, setIsAdmin] = useState(false)
+  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      try {
-        // Redirect to login if no user
-        if (!user) {
-          router.push('/auth?redirectTo=/admin');
-          return;
-        }
-        
-        // All authenticated users have admin access
-        console.log('User authenticated, granting admin access');
-        
-        // User has admin access
-        setIsAdmin(true);
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error checking admin access:", error);
-        router.push("/");
-      }
+    // Simple check - if user exists, they can access admin
+    if (user) {
+      // User is authenticated, allow admin access
+      setIsLoading(false);
+    } else {
+      // No user, redirect to login
+      router.push('/auth?redirectTo=/admin');
     }
-
-    checkAdminAccess()
-  }, [router, supabase, user])
+  }, [router, user])
 
   if (isLoading) {
     return (
