@@ -19,14 +19,20 @@ export default function AdminLayout({
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
-        // For the test application, we'll allow all authenticated users to access the admin area
+        // Redirect to login if no user
         if (!user) {
           router.push('/auth?redirectTo=/admin');
           return;
         }
         
-        // User is authenticated, grant access for the test application
+        // For testing purposes, allow all authenticated users to access admin functionality
         console.log('User authenticated, granting admin access for testing');
+        
+        // Set admin status to true for any authenticated user
+        const adminAccess = true;
+        
+        // User has admin access
+        setIsAdmin(true);
         setIsLoading(false);
       } catch (error) {
         console.error("Error checking admin access:", error);

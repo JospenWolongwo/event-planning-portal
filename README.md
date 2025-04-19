@@ -20,9 +20,10 @@ Event Portal is a full-featured event management system that allows:
 
 - **Event Discovery**
   - Browse upcoming events
-  - Filter by category, location, and price
-  - Search for specific events
+  - Advanced filtering by category, date, and price range
+  - Full-text search for events
   - View event details and organizer information
+  - Loading states with skeleton UI for better user experience
 
 - **Registration System**
   - Multi-step registration process
@@ -76,8 +77,23 @@ Event Portal is a full-featured event management system that allows:
 
 3. Set up environment variables:
    - Copy `.env.local.example` to `.env.local`
-   - Fill in your Supabase URL and anon key
-   - Add other required API keys as needed
+   - Fill in the following required variables:
+   ```
+   # Supabase Configuration
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   
+   # Application Configuration
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   NEXT_PUBLIC_APP_NAME="Event Portal"
+   
+   # Payment Gateway Configuration (for production)
+   NEXT_PUBLIC_MOMO_API_KEY=your_momo_api_key
+   NEXT_PUBLIC_ORANGE_MONEY_MERCHANT_ID=your_merchant_id
+   
+   # Additional services (optional for development)
+   NEXT_PUBLIC_MAPS_API_KEY=your_google_maps_api_key
+   ```
 
 4. Run the development server:
    ```bash
@@ -204,9 +220,18 @@ vercel
 - **components/**: Reusable UI components
 - **lib/**: Utility functions and services
 - **hooks/**: Custom React hooks
-- **providers/**: Context providers
+- **providers/**: Context providers (Supabase, Theme, Authentication)
 - **public/**: Static assets
 - **styles/**: Global styles and Tailwind configuration
+
+### Authentication Flow
+
+The application uses a dual authentication system:
+
+1. **Supabase Authentication**: Provides secure, production-ready authentication via magic links
+2. **Custom Auth Hook**: Implemented with Zustand for state management and persistence
+
+For development and testing, all authenticated users can access admin features to facilitate easier testing.
 
 ### State Management
 
@@ -237,8 +262,16 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-- Email: support@eventportal.com
+- Email: jospenwolongwo@gmail.com
 - Phone: +237 678 901 234
+
+## Recent Updates
+
+- Added advanced event filtering and search functionality
+- Implemented skeleton loading states for improved UX
+- Fixed authentication state synchronization issues
+- Enhanced admin access for testing purposes
+- Added data persistence with caching
 
 ## Acknowledgments
 

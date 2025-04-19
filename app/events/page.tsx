@@ -41,11 +41,28 @@ export default function EventsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [totalPages, setTotalPages] = useState(1)
   const { supabase } = useSupabase()
   
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000])
+  const [dateFilter, setDateFilter] = useState<string>('')
+  
   // Load events from Supabase
+  // Apply filters when filter values change
   useEffect(() => {
+    // Reset to first page when filters change
+    if (!initialLoading) {
+      setCurrentPage(1)
+    }
+  }, [searchTerm, selectedCategory, priceRange, dateFilter, initialLoading])
+  
+  // Load events from cache initially if available, then fetch from API
+  useEffect(() => {
+    // Function to fetch events from Supabase - moved inside useEffect to fix dependency issues
     const fetchEvents = async () => {
       setLoading(true)
       try {
@@ -54,35 +71,104 @@ export default function EventsPage() {
         const from = (currentPage - 1) * pageSize
         const to = from + pageSize - 1
         
-        // Query events from Supabase
-        const { data: eventsData, error, count } = await supabase
+        // Start building the query
+        let query = supabase
           .from('events')
           .select(`
             id, title, description, location, 
             event_date, event_time, price, capacity, 
             image_url, category, organizer_id, 
-            profiles(id, full_name, avatar_url)
+            profiles(id, full_name, avatar_url),
+            registrations(id)
           `, { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .range(from, to)
+        
+        // Apply filters if they exist
+        // Search term filter (search in title and description)
+        if (searchTerm) {
+          // Use ilike for case-insensitive search
+          query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
+        }
+        
+        // Category filter
+        if (selectedCategory) {
+          query = query.eq('category', selectedCategory)
+        }
+        
+        // Price range filter
+        if (priceRange[0] > 0 || priceRange[1] < 10000) {
+          query = query.gte('price', priceRange[0]).lte('price', priceRange[1])
+        }
+        
+        // Date filter
+        if (dateFilter) {
+          const today = new Date().toISOString().split('T')[0]
+          
+          if (dateFilter === 'today') {
+            query = query.eq('event_date', today)
+          } else if (dateFilter === 'upcoming') {
+            query = query.gte('event_date', today)
+          } else if (dateFilter === 'past') {
+            query = query.lt('event_date', today)
+          } else if (dateFilter === 'week') {
+            // Get date 7 days from now
+            const nextWeek = new Date()
+            nextWeek.setDate(nextWeek.getDate() + 7)
+            const nextWeekStr = nextWeek.toISOString().split('T')[0]
+            
+            query = query.gte('event_date', today).lte('event_date', nextWeekStr)
+          }
+        }
+        
+        // Apply sorting and pagination
+        query = query.order('created_at', { ascending: false }).range(from, to)
+        
+        // Execute the query
+        const { data: eventsData, error, count } = await query
         
         if (error) {
           throw error
         }
         
-        // Transform the data to include organizer information
-        const formattedEvents = eventsData.map((event: { id: string; title: string; description: string; event_date: string; event_time: string; location: string; price: number; capacity: number; image_url?: string; profiles: any }) => ({
+        // Get registration counts for each event - using countBy function instead of group_by
+        const eventIds = eventsData.map((event: any) => event.id)
+        
+        // Alternative approach to get registration counts without using group_by
+        // Query registrations for each event individually and count them
+        const registrationCounts: Record<string, number> = {}
+        
+        // For each event, count its registrations
+        for (const eventId of eventIds) {
+          const { count: regCount, error: countError } = await supabase
+            .from('registrations')
+            .select('*', { count: 'exact' })
+            .eq('event_id', eventId)
+            
+          if (!countError) {
+            registrationCounts[eventId] = regCount || 0
+          }
+        }
+        
+        // Transform the data to include organizer information and registration counts
+        const formattedEvents = eventsData.map((event: any) => ({
           ...event,
           organizer: event.profiles,
           // Use a default image if none is provided
           image_url: event.image_url || CURATED_EVENT_IMAGES[Math.floor(Math.random() * CURATED_EVENT_IMAGES.length)],
-          // Default to 0 registered attendees until we implement registration
-          registered_attendees: 0
+          // Get registration count or default to 0
+          registered_attendees: registrationCounts[event.id] || 0
         }))
         
         console.log('Loaded events:', formattedEvents)
         setEvents(formattedEvents)
         setTotalPages(Math.ceil((count || 0) / pageSize) || 1)
+        
+        // Cache events in localStorage for faster initial loading on refresh
+        localStorage.setItem('cached_events', JSON.stringify({
+          events: formattedEvents,
+          totalPages: Math.ceil((count || 0) / pageSize) || 1,
+          timestamp: Date.now(),
+          currentPage
+        }))
       } catch (error) {
         console.error('Error fetching events:', error)
         toast.error('Failed to load events')
@@ -91,134 +177,205 @@ export default function EventsPage() {
       }
     }
 
-    fetchEvents()
-  }, [supabase, currentPage, setEvents, setLoading, setTotalPages])
+    const loadEvents = async () => {
+      try {
+        // Try to get cached events first
+        const cachedData = localStorage.getItem('cached_events')
+        if (cachedData) {
+          const { events: cachedEvents, totalPages: cachedPages, timestamp, currentPage: cachedPage } = JSON.parse(cachedData)
+          const cacheAge = Date.now() - timestamp
+          
+          // Use cache if it's less than 5 minutes old
+          if (cacheAge < 5 * 60 * 1000) {
+            console.log('Using cached events data')
+            setEvents(cachedEvents)
+            setTotalPages(cachedPages)
+            // Don't override current page if user has navigated
+            if (currentPage === 1) {
+              setCurrentPage(cachedPage)
+            }
+            setLoading(false)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading cached events:', error)
+      }
+      
+      // Always fetch fresh data from API
+      fetchEvents()
+    }
+    
+    loadEvents()
+    // After first load, set initialLoading to false
+    if (initialLoading) {
+      setInitialLoading(false)
+    }
+  }, [currentPage, supabase, searchTerm, selectedCategory, priceRange, dateFilter, initialLoading]) // Include all filter dependencies
 
   const formatEventTime = (date: string, time: string): string => {
     return `${date} at ${time}`;
   };
-
+  
   const handleRegistration = (event: { id: string }) => {
     router.push(`/events/${event.id}`);
   };
+
+  // Get available categories from events
+  const categories = Array.from(new Set(events.map(event => event.category))).filter(Boolean)
+  
+  // Apply filtering to displayed events
+  const filteredEvents = events
+  
+  // Reset filters function
+  const resetFilters = () => {
+    setSearchTerm('')
+    setSelectedCategory('')
+    setPriceRange([0, 10000])
+    setDateFilter('')
+    setCurrentPage(1)
+  }
 
   return (
     <div className="container py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Upcoming Events</h1>
-          <p className="text-muted-foreground">
-            Browse and register for exciting events
-          </p>
         </div>
-        
-        <div className="flex items-center gap-2 mt-4 md:mt-0">
+
+        <div className="mt-4 md:mt-0 flex flex-wrap gap-2">
           <Button
-            variant="outline"
-            size="sm"
             onClick={() => setShowFilters(!showFilters)}
+            variant="outline"
+            className="flex items-center gap-2"
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
+            <Filter className="h-4 w-4" />
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
           </Button>
         </div>
       </div>
 
+      {/* Filters */}
       {showFilters && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Filter Events</CardTitle>
-            <CardDescription>
-              Refine your search to find the perfect event
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2">
-                <Label htmlFor="search">Search</Label>
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="search"
-                    placeholder="Search events..."
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <select
-                  id="category"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="">All Categories</option>
-                  <option value="Conference">Conference</option>
-                  <option value="Workshop">Workshop</option>
-                  <option value="Festival">Festival</option>
-                  <option value="Meetup">Meetup</option>
-                </select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="date">Date Range</Label>
-                <select
-                  id="date"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="">Any Date</option>
-                  <option value="today">Today</option>
-                  <option value="week">This Week</option>
-                  <option value="month">This Month</option>
-                  <option value="custom">Custom Range</option>
-                </select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Price Range (FCFA)</Label>
-                <Slider
-                  defaultValue={[0, 10000]}
-                  max={10000}
-                  step={500}
-                  className="py-4"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>0 FCFA</span>
-                  <span>10,000 FCFA</span>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-4 border rounded-lg bg-card">
+          {/* Search filter */}
+          <div>
+            <Label htmlFor="search" className="mb-2">
+              Search
+            </Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="search"
+                placeholder="Search events..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          {/* Category filter */}
+          <div>
+            <Label htmlFor="category" className="mb-2">
+              Category
+            </Label>
+            <select
+              id="category"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="">All Categories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Date filter */}
+          <div>
+            <Label htmlFor="date" className="mb-2">
+              Date
+            </Label>
+            <select
+              id="date"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            >
+              <option value="">All Dates</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="past">Past Events</option>
+            </select>
+          </div>
+          
+          {/* Price range */}
+          <div>
+            <Label className="mb-2">Price Range</Label>
+            <div className="pt-4">
+              <Slider
+                defaultValue={[0, 10000]}
+                max={10000}
+                step={500}
+                value={priceRange}
+                onValueChange={(value) => setPriceRange(value as [number, number])}
+              />
+              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+                <span>Free</span>
+                <span>{priceRange[0]} - {priceRange[1]} FCFA</span>
               </div>
             </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
-            <Button variant="outline">Reset</Button>
-            <Button>Apply Filters</Button>
-          </CardFooter>
-        </Card>
-      )}
-
-      {/* Loading state */}
-      {loading && (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading events...</span>
+          </div>
+          
+          {/* Reset filters button */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-4 flex justify-end mt-4">
+            <Button variant="outline" onClick={resetFilters}>
+              Reset Filters
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Events grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-        {!loading && events.length === 0 ? (
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col items-center justify-center py-12">
-            <h3 className="text-xl font-medium">No events found</h3>
-            <p className="text-muted-foreground">Check back later for upcoming events</p>
-          </div>
-        ) : !loading ? events.map((event) => (
-          <Card key={event.id} className="overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div className="relative aspect-video w-full overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {initialLoading ? (
+          // Show skeleton loaders during initial loading
+          Array(6).fill(0).map((_, index) => (
+            <div key={`skeleton-${index}`} className="animate-appear">
+              <div className="animate-pulse">
+                <div className="bg-muted aspect-video rounded-t-lg mb-4"></div>
+                <div className="space-y-2 px-4 pb-4">
+                  <div className="h-5 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                  <div className="h-4 bg-muted rounded w-full"></div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : loading ? (
+          // Show loading state during subsequent data fetches
+          Array(6).fill(0).map((_, index) => (
+            <div key={`skeleton-${index}`} className="animate-appear">
+              <div className="animate-pulse">
+                <div className="bg-muted aspect-video rounded-t-lg mb-4"></div>
+                <div className="space-y-2 px-4 pb-4">
+                  <div className="h-5 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                  <div className="h-4 bg-muted rounded w-full"></div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : events.length ? events.map((event) => (
+          <Card key={event.id} className="overflow-hidden">
+            <div className="aspect-video relative">
               <Image
                 src={event.image_url}
                 alt={event.title}
                 fill
-                className="object-cover transition-all hover:scale-105"
+                className="object-cover"
               />
             </div>
             <CardHeader>
@@ -280,7 +437,19 @@ export default function EventsPage() {
               </div>
             </CardFooter>
           </Card>
-        )) : null}
+        )) : (
+          <div className="col-span-3 flex flex-col items-center justify-center py-12">
+            <div className="text-center">
+              <h3 className="text-xl font-medium">No events found</h3>
+              <p className="text-muted-foreground mt-2">Try adjusting your filters or check back later for new events.</p>
+              {(searchTerm || selectedCategory || dateFilter || priceRange[0] > 0 || priceRange[1] < 10000) && (
+                <Button onClick={resetFilters} className="mt-4">
+                  Reset Filters
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pagination */}

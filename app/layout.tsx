@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/app/providers'
 import { Navbar } from '@/components/navbar'
@@ -8,8 +7,6 @@ import { SupabaseProvider } from '@/providers/SupabaseProvider'
 import { ChatProvider } from '@/providers/ChatProvider'
 import PWAPrompts from '@/components/pwa/PWAPrompts'
 import { Analytics } from '@vercel/analytics/react'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const viewport = {
   themeColor: '#28C496',
@@ -72,7 +69,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#28C496" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
-      <body className={`h-full ${inter.className}`}>
+      <body className="h-full font-sans">
         <SupabaseProvider>
           <ChatProvider>
             <Providers>
