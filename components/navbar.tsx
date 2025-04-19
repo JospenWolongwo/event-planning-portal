@@ -42,6 +42,15 @@ export function Navbar() {
   // Enhanced user detection - prioritize auth state from multiple sources
   const user = authUser || supabaseSession?.user;
   const session = authSession || supabaseSession;
+  
+  // Log the authentication state to help with debugging
+  useEffect(() => {
+    if (user) {
+      console.log('Navbar detected authenticated user:', user.email);
+    } else {
+      console.log('Navbar: No authenticated user detected');
+    }
+  }, [user]);
 
   useEffect(() => {
     setMounted(true);
@@ -53,10 +62,11 @@ export function Navbar() {
       setShowAndroid(true);
     }
     
-    // Listen for auth state changes
+    // Listen for auth state changes from custom events
     const handleAuthChange = (e: any) => {
-      const { user: newUser, session: newSession } = e.detail;
-      console.log('Auth state change detected in navbar:', newUser);
+      console.log('Auth event received in navbar:', e.type);
+      const { user: newUser } = e.detail || {};
+      console.log('Auth state change detected in navbar:', newUser?.email || 'no user');
       // Force re-render by updating component state
       if (newUser) {
         // We have a new authentication - update UI accordingly
@@ -66,31 +76,54 @@ export function Navbar() {
     
     window.addEventListener('auth-state-changed', handleAuthChange);
     
-    // Add page load auth check
-    const checkAuthOnLoad = () => {
+    // Add direct listener for Supabase auth changes (in addition to custom events)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('Supabase auth state changed in navbar:', event);
+      if (newSession?.user) {
+        console.log('New authenticated user:', newSession.user.email);
+        // Ensure avatar updates
+        setAvatarUrl(null);
+        // Force a re-render by dispatching our custom event
+        window.dispatchEvent(new CustomEvent('auth-state-changed', {
+          detail: { user: newSession.user, session: newSession }
+        }));
+      }
+    });
+    
+    // Check URL for auth parameters that suggest we need to refresh auth state
+    const checkAuthParams = () => {
       if (typeof window !== 'undefined') {
         const searchParams = new URLSearchParams(window.location.search);
-        if (searchParams.has('refresh') || searchParams.has('authSuccess')) {
+        const hasAuthParams = searchParams.has('refresh') || searchParams.has('auth');
+        
+        if (hasAuthParams) {
+          console.log('Auth parameters detected in URL, refreshing session');
+          
           // Force auth check if coming from auth callback
           supabase.auth.getSession().then(({ data }) => {
             if (data?.session?.user) {
-              // Manually dispatch auth state change event
-              window.dispatchEvent(new CustomEvent('auth-state-changed', { 
-                detail: { 
-                  user: data.session.user, 
-                  session: data.session 
-                } 
-              }));
+              console.log('Retrieved session for user:', data.session.user.email);
+              
+              // Clean up URL parameters
+              const url = new URL(window.location.href);
+              url.searchParams.delete('refresh');
+              url.searchParams.delete('auth');
+              url.searchParams.delete('ts');
+              window.history.replaceState({}, '', url.toString());
+            } else {
+              console.log('No session found after auth callback');
             }
           });
         }
       }
     };
     
-    checkAuthOnLoad();
+    // Run the check immediately
+    checkAuthParams();
     
     return () => {
       window.removeEventListener('auth-state-changed', handleAuthChange);
+      subscription.unsubscribe();
     };
   }, [setShowAndroid, isIOSDevice, supabase]);
 

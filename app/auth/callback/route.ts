@@ -6,33 +6,33 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+  
   if (code) {
     try {
       // Create a Supabase client using the route handler helper
-      const supabase = createRouteHandlerClient({ cookies });
-
+      const supabase = createRouteHandlerClient({ cookies })
+      
       // Exchange the auth code for a session
-      await supabase.auth.exchangeCodeForSession(code);
-
-      // Redirect back to the home page with a refresh signal
-      // The query parameter will trigger a full page refresh to reset auth state
-      return NextResponse.redirect(`${requestUrl.origin}?refresh=${Date.now()}&authSuccess=true`);
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      
+      if (error) throw error;
+      
+      if (data?.session) {
+        // Success - redirect with a signal to force a full refresh
+        // Adding both auth=success and refresh parameters to ensure UI updates
+        return NextResponse.redirect(`${requestUrl.origin}/?auth=success&refresh=${Date.now()}`);
+      }
     } catch (error: any) {
       console.error("Error in auth callback:", error);
-      // Redirect to auth page with error parameters if something went wrong
+      // Redirect to auth page with error parameters
       return NextResponse.redirect(
-        `${
-          requestUrl.origin
-        }/auth?error=callback_error&errorDescription=${encodeURIComponent(
-          error.message || "Authentication error occurred"
-        )}`
-      );
+        `${requestUrl.origin}/auth?error=callback_error&errorDescription=${encodeURIComponent(error.message || 'Unknown auth error')}`
+      )
     }
   }
-
+  
   // If no code was provided, redirect to auth page with an error
   return NextResponse.redirect(
     `${requestUrl.origin}/auth?error=no_code&errorDescription=No authentication code was provided`
