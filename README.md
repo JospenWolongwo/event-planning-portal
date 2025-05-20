@@ -2,6 +2,12 @@
 
 A comprehensive event management platform built with Next.js 14, Supabase, and TypeScript.
 
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black)](https://event-planning-portal.vercel.app)
+
+**Live Demo:** [https://event-planning-portal.vercel.app](https://event-planning-portal.vercel.app)
+
+![Dashboard](public/images/screenshots/desktop-dashboard.png)
+
 ## Overview
 
 Event Portal is a full-featured event management system that allows:
@@ -280,8 +286,20 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-- Email: jospenwolongwo@gmail.com
-- Phone: +237 678 901 234
+- **Developer**: Jospen Wolongwo
+- **Email**: [jospenwolongwo@gmail.com](mailto:jospenwolongwo@gmail.com)
+- **Website**: [jospenwolongwo.com](https://jospenwolongwo.com)
+- **GitHub**: [JospenWolongwo](https://github.com/JospenWolongwo)
+
+## Screenshots
+
+### Desktop Dashboard
+
+![Desktop Dashboard](public/images/screenshots/desktop-dashboard.png)
+
+### Mobile View
+
+![Mobile View](public/images/screenshots/mobile-view.png)
 
 ## Recent Updates
 
