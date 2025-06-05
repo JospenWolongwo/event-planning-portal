@@ -1,39 +1,52 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useTheme } from 'next-themes'
-import { useSupabase } from '@/providers/SupabaseProvider'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, Sun, Moon, LogOut, User, Calendar, BookOpen, Download, Settings, LayoutDashboard, PlusCircle, Shield } from 'lucide-react'
-import { BsWhatsapp } from 'react-icons/bs'
-import { PhoneCall, Mail } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useShowAndroidPrompt } from '@/hooks/use-show-android-prompt'
-import { useDeviceDetect } from '@/hooks/useDeviceDetect';
-import { IOSInstallPrompt } from '@/components/pwa/IOSInstallPrompt'
-import { usePWA } from '@/hooks/usePWA'
-import { isAdmin } from '@/lib/utils/admin'
-import { useAuth } from '@/hooks/useAuth'
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Menu,
+  Sun,
+  Moon,
+  LogOut,
+  User,
+  Calendar,
+  BookOpen,
+  Download,
+  Settings,
+  LayoutDashboard,
+  PlusCircle,
+  Shield,
+} from "lucide-react";
+import { BsWhatsapp } from "react-icons/bs";
+import { PhoneCall, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useShowAndroidPrompt } from "@/hooks/use-show-android-prompt";
+import { useDeviceDetect } from "@/hooks/useDeviceDetect";
+import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
+import { usePWA } from "@/hooks/usePWA";
+import { isAdmin } from "@/lib/utils/admin";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
-  const { supabase, session: supabaseSession } = useSupabase()
-  const { user: authUser, session: authSession } = useAuth()
-  const { theme, setTheme } = useTheme()
+  const { supabase, session: supabaseSession } = useSupabase();
+  const { user: authUser, session: authSession } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isOpen, setIsOpen] = useState(false)
-  const [isOrganizer, setIsOrganizer] = useState(false)
-  const [organizerStatus, setOrganizerStatus] = useState<string | null>(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const [isOrganizer, setIsOrganizer] = useState(false);
+  const [organizerStatus, setOrganizerStatus] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const { setShowAndroid } = useShowAndroidPrompt();
@@ -42,87 +55,98 @@ export function Navbar() {
   // Enhanced user detection - prioritize auth state from multiple sources
   const user = authUser || supabaseSession?.user;
   const session = authSession || supabaseSession;
-  
+
   // Log the authentication state to help with debugging
   useEffect(() => {
     if (user) {
-      console.log('Navbar detected authenticated user:', user.email);
+      console.log("Navbar detected authenticated user:", user.email);
     } else {
-      console.log('Navbar: No authenticated user detected');
+      console.log("Navbar: No authenticated user detected");
     }
   }, [user]);
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Handle PWA prompts
     if (isIOSDevice) {
       setShowIOSPrompt(true);
     } else {
       setShowAndroid(true);
     }
-    
+
     // Listen for auth state changes from custom events
     const handleAuthChange = (e: any) => {
-      console.log('Auth event received in navbar:', e.type);
+      console.log("Auth event received in navbar:", e.type);
       const { user: newUser } = e.detail || {};
-      console.log('Auth state change detected in navbar:', newUser?.email || 'no user');
+      console.log(
+        "Auth state change detected in navbar:",
+        newUser?.email || "no user"
+      );
       // Force re-render by updating component state
       if (newUser) {
         // We have a new authentication - update UI accordingly
         setAvatarUrl(null); // Reset to trigger a re-fetch
       }
     };
-    
-    window.addEventListener('auth-state-changed', handleAuthChange);
-    
+
+    window.addEventListener("auth-state-changed", handleAuthChange);
+
     // Add direct listener for Supabase auth changes (in addition to custom events)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log('Supabase auth state changed in navbar:', event);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log("Supabase auth state changed in navbar:", event);
       if (newSession?.user) {
-        console.log('New authenticated user:', newSession.user.email);
+        console.log("New authenticated user:", newSession.user.email);
         // Ensure avatar updates
         setAvatarUrl(null);
         // Force a re-render by dispatching our custom event
-        window.dispatchEvent(new CustomEvent('auth-state-changed', {
-          detail: { user: newSession.user, session: newSession }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("auth-state-changed", {
+            detail: { user: newSession.user, session: newSession },
+          })
+        );
       }
     });
-    
+
     // Check URL for auth parameters that suggest we need to refresh auth state
     const checkAuthParams = () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         const searchParams = new URLSearchParams(window.location.search);
-        const hasAuthParams = searchParams.has('refresh') || searchParams.has('auth');
-        
+        const hasAuthParams =
+          searchParams.has("refresh") || searchParams.has("auth");
+
         if (hasAuthParams) {
-          console.log('Auth parameters detected in URL, refreshing session');
-          
+          console.log("Auth parameters detected in URL, refreshing session");
+
           // Force auth check if coming from auth callback
           supabase.auth.getSession().then(({ data }) => {
             if (data?.session?.user) {
-              console.log('Retrieved session for user:', data.session.user.email);
-              
+              console.log(
+                "Retrieved session for user:",
+                data.session.user.email
+              );
+
               // Clean up URL parameters
               const url = new URL(window.location.href);
-              url.searchParams.delete('refresh');
-              url.searchParams.delete('auth');
-              url.searchParams.delete('ts');
-              window.history.replaceState({}, '', url.toString());
+              url.searchParams.delete("refresh");
+              url.searchParams.delete("auth");
+              url.searchParams.delete("ts");
+              window.history.replaceState({}, "", url.toString());
             } else {
-              console.log('No session found after auth callback');
+              console.log("No session found after auth callback");
             }
           });
         }
       }
     };
-    
+
     // Run the check immediately
     checkAuthParams();
-    
+
     return () => {
-      window.removeEventListener('auth-state-changed', handleAuthChange);
+      window.removeEventListener("auth-state-changed", handleAuthChange);
       subscription.unsubscribe();
     };
   }, [setShowAndroid, isIOSDevice, supabase]);
@@ -131,76 +155,76 @@ export function Navbar() {
     if (user) {
       const getOrganizerStatus = async () => {
         const { data } = await supabase
-          .from('organizers')
-          .select('status')
-          .eq('user_id', user.id)
-          .single()
+          .from("organizers")
+          .select("status")
+          .eq("user_id", user.id)
+          .single();
 
         if (data) {
-          setIsOrganizer(true)
-          setOrganizerStatus(data.status)
+          setIsOrganizer(true);
+          setOrganizerStatus(data.status);
         }
 
         // Check if user is admin
         const userIsAdmin = isAdmin(user);
         if (userIsAdmin) {
           setIsOrganizer(true);
-          setOrganizerStatus('approved');
+          setOrganizerStatus("approved");
         }
 
         // Get avatar URL
         const { data: profileData } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', user.id)
-          .single()
+          .from("profiles")
+          .select("avatar_url")
+          .eq("id", user.id)
+          .single();
 
         if (profileData?.avatar_url) {
-          setAvatarUrl(profileData.avatar_url)
+          setAvatarUrl(profileData.avatar_url);
         }
-      }
+      };
 
-      getOrganizerStatus()
+      getOrganizerStatus();
     }
-  }, [supabase, user])
+  }, [supabase, user]);
 
   const handleSignOut = async () => {
     try {
       // Perform a complete logout by clearing all auth data
-      
+
       // 1. Sign out from Supabase
       await supabase.auth.signOut();
-      
+
       // Clear any remaining auth data
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         // Clear auth-related localStorage items
-        localStorage.removeItem('supabase.auth.token');
-        
+        localStorage.removeItem("supabase.auth.token");
+
         // Clear any auth storage from state management
-        localStorage.removeItem('auth-storage');
+        localStorage.removeItem("auth-storage");
       }
-      
+
       // 3. Force a complete page reload to reset all state
-      window.location.href = '/';
-      
-      console.log('Successfully signed out');
+      window.location.href = "/";
+
+      console.log("Successfully signed out");
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
       // Force redirect even if there's an error
-      window.location.href = '/';
+      window.location.href = "/";
     }
-  }
+  };
 
   const menuItems = [
-    { href: '/', label: 'Home' },
-    { href: '/events', label: 'Find Events' },
-    { href: '/about', label: 'About' },
-    { href: '/advice', label: 'Event Safety & FAQ' },
-    { href: '/contact', label: 'Contact' },
-  ]
+    { href: "/", label: "Home" },
+    { href: "/events", label: "Find Events" },
+    { href: "/about", label: "About" },
+    { href: "/advice", label: "Event Safety & FAQ" },
+    { href: "/contact", label: "Contact" },
+  ];
 
   const NavItems = ({ className }: { className?: string }) => (
-    <div className={cn('flex gap-6', className)}>
+    <div className={cn("flex gap-6", className)}>
       {menuItems.map((item) => (
         <Link
           key={item.href}
@@ -211,7 +235,7 @@ export function Navbar() {
         </Link>
       ))}
     </div>
-  )
+  );
 
   function PWAInstallButton() {
     const { setShowAndroid } = useShowAndroidPrompt();
@@ -224,21 +248,26 @@ export function Navbar() {
     }, []);
 
     const handleInstallClick = async () => {
-      console.log('🔍 Install button clicked:', { isInstallable, hasPrompt, isIOSDevice, isAndroidDevice });
-      
+      console.log("🔍 Install button clicked:", {
+        isInstallable,
+        hasPrompt,
+        isIOSDevice,
+        isAndroidDevice,
+      });
+
       if (isIOSDevice) {
         setShowIOSPrompt(true);
       } else if (isAndroidDevice) {
         try {
-          console.log('🚀 Attempting installation...');
+          console.log("🚀 Attempting installation...");
           const success = await install();
-          
+
           if (!success) {
-            console.log('ℹ️ Installation not completed, showing custom dialog');
+            console.log("ℹ️ Installation not completed, showing custom dialog");
             setShowAndroid(true);
           }
         } catch (err) {
-          console.error('❌ Installation error:', err);
+          console.error("❌ Installation error:", err);
           setShowAndroid(true);
         }
       }
@@ -246,12 +275,12 @@ export function Navbar() {
 
     // For debugging
     useEffect(() => {
-      console.log('📱 PWA Status:', {
+      console.log("📱 PWA Status:", {
         isInstallable,
         hasPrompt,
         isIOSDevice,
         isAndroidDevice,
-        env: process.env.NODE_ENV
+        env: process.env.NODE_ENV,
       });
     }, [isInstallable, hasPrompt, isIOSDevice, isAndroidDevice]);
 
@@ -270,7 +299,7 @@ export function Navbar() {
             <Download className="h-4 w-4" />
             <span>Install on iOS</span>
           </Button>
-          <IOSInstallPrompt 
+          <IOSInstallPrompt
             show={showIOSPrompt}
             onClose={() => setShowIOSPrompt(false)}
           />
@@ -338,7 +367,7 @@ export function Navbar() {
             </nav>
           </SheetContent>
         </Sheet>
-        
+
         <div className="mr-4 md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Calendar className="h-6 w-6" />
@@ -356,9 +385,9 @@ export function Navbar() {
                 asChild
                 className="text-green-500 hover:text-green-600 hover:bg-green-100"
               >
-                <a 
+                <a
                   href="https://wa.me/+237698805890"
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center"
                 >
@@ -382,17 +411,25 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
                 className="hover:bg-muted"
               >
-                {mounted && (theme === 'light' ? <Moon className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sun className="h-4 w-4 sm:h-5 sm:w-5" />)}
+                {mounted &&
+                  (theme === "light" ? (
+                    <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  ) : (
+                    <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
+                  ))}
               </Button>
             </div>
           </div>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={avatarUrl || ""} />
                     <AvatarFallback>
@@ -403,12 +440,15 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuItem asChild>
-                  <Link href={isOrganizer ? "/organizer/profile" : "/profile"} className="flex items-center">
+                  <Link
+                    href={isOrganizer ? "/organizer/profile" : "/profile"}
+                    className="flex items-center"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     <span>{isOrganizer ? "Organizer Profile" : "Profile"}</span>
                   </Link>
                 </DropdownMenuItem>
-                
+
                 {/* Admin Section - available to all authenticated users in simplified app */}
                 <>
                   <DropdownMenuSeparator />
@@ -425,26 +465,23 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                 </>
-                
+
                 {/* Organizer Section - only show if not showing admin section */}
-                {isOrganizer && organizerStatus === 'approved' && (
+                {isOrganizer && organizerStatus === "approved" && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/organizer/dashboard" className="flex items-center">
+                      <Link
+                        href="/organizer/dashboard"
+                        className="flex items-center"
+                      >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/organizer/events" className="flex items-center">
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        My Events
-                      </Link>
-                    </DropdownMenuItem>
                   </>
                 )}
-                
+
                 <DropdownMenuItem asChild>
                   <Link href="/bookings" className="flex items-center">
                     <Calendar className="mr-2 h-4 w-4" />
@@ -475,5 +512,5 @@ export function Navbar() {
         </div>
       </div>
     </header>
-  )
+  );
 }
